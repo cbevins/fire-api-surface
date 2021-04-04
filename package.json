@@ -1,0 +1,90 @@
+{
+  "name": "@cbevins/template-node-lib",
+  "version": "0.1.0",
+  "description": "template-node-lib is a template repo for developing node library packages",
+  "author": "Collin D. Bevins <cbevins@montana.com>",
+  "license": "MIT",
+  "keywords": [
+    "template"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cbevins/template-node-lib.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cbevins/template-node-lib/issues"
+  },
+  "homepage": "https://github.com/cbevins/template-node-lib/readme",
+  "main": "./dist/bundle.cjs.js",
+  "exports": "./dist/bundle.esm.js",
+  "module": "./dist/bundle.esm.js",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "RELEASE_NOTES.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "prebuild": "rimraf dist",
+    "publish:github": "npm publish --registry https://npm.pkg.github.com --access public",
+    "publish:npm": "npm publish --registry https://registry.npmjs.org --access public",
+    "test": "jest",
+    "test:clear": "jest --clearCache",
+    "test:coverage": "jest --coverage",
+    "test:coveralls": "jest --coverage && coveralls < coverage/lcov.info",
+    "test:watch": "jest --watchAll"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "publishConfigGithub": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "publishConfigNpm": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "<rootDir>/src/untracked"
+    ],
+    "collectCoverageFrom": [
+      "**/*.{js,jsx}",
+      "!**/index.js",
+      "!**/coverage/**",
+      "!**/dist/**",
+      "!**/untracked/**",
+      "!**/utils/**",
+      "!**/node_modules/**",
+      "!**/.eslintrc.js",
+      "!rollup.config.js"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "7.13.14",
+    "@babel/preset-env": "7.13.12",
+    "@rollup/plugin-babel": "5.3.0",
+    "@rollup/plugin-json": "~4",
+    "@rollup/plugin-node-resolve": "11.2.1",
+    "@rollup/pluginutils": "4.1.0",
+    "coveralls": "~3",
+    "eslint": "7.23.0",
+    "eslint-config-standard": "16.0.2",
+    "eslint-plugin-import": "2.22.1",
+    "eslint-plugin-jest": "24.3.3",
+    "eslint-plugin-node": "11.1.0",
+    "eslint-plugin-promise": "4.3.1",
+    "eslint-plugin-standard": "5.0.0",
+    "jest": "26.6.3",
+    "rimraf": "~3",
+    "rollup": "2.44.0",
+    "rollup-plugin-terser": "~7",
+    "rollup-plugin-uglify": "~6"
+  },
+  "dependencies": {}
+}
