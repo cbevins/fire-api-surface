@@ -84,14 +84,12 @@ export class SimpleSurfaceFire {
 
     const result = {
       fire: {
+        curedHerbFraction: this.dag.node('surface.primary.fuel.model.behave.parms.cured.herb.fraction').value(), // ratio
         effectiveWindSpeed: this.dag.node('surface.primary.fuel.fire.effectiveWindSpeed').value(), // ft/min
         flameResidenceTime: this.dag.node('surface.primary.fuel.fire.flameResidenceTime').value(), // min
         headingFromUpslope: this.dag.node('surface.primary.fuel.fire.heading.fromUpslope').value(), // degrees
         heatPerUnitArea: this.dag.node('surface.primary.fuel.fire.heatPerUnitArea').value(), // btu/ft2
         reactionIntensity: this.dag.node('surface.primary.fuel.fire.reactionIntensity').value() // btu/ft2/min
-      },
-      fuel: {
-        curedHerb: this.dag.node('surface.primary.fuel.model.behave.parms.cured.herb.fraction').value()
       },
       ellipse: {
         area: this.dag.node('surface.fire.ellipse.size.area').value(), // ft2
@@ -115,9 +113,9 @@ export class SimpleSurfaceFire {
         },
         heading: {
           firelineIntensity: this.dag.node('surface.fire.ellipse.head.firelineIntensity').value(),
-          flameElngth: this.dag.node('surface.fire.ellipse.head.flameLength').value(),
+          flameLength: this.dag.node('surface.fire.ellipse.head.flameLength').value(),
           scorchHeight: this.dag.node('surface.fire.ellipse.head.scorchHeight').value(),
-          spreadFistance: this.dag.node('surface.fire.ellipse.head.spreadDistance').value(),
+          spreadDistance: this.dag.node('surface.fire.ellipse.head.spreadDistance').value(),
           spreadRate: this.dag.node('surface.fire.ellipse.head.spreadRate').value()
         }
       }

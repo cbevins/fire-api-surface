@@ -1,5 +1,4 @@
-import { SimpleSurfaceFire } from './SimpleSurfaceFire.js'
-import { SimpleSurfaceFireInput } from './SimpleSurfaceFireInput.js'
+import { SimpleSurfaceFire, SimpleSurfaceFireInput } from './index.js'
 
 test('new SimpleSurfaceFire', () => {
   const surface = new SimpleSurfaceFire()
