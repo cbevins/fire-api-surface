@@ -39,7 +39,8 @@
     "test:watch": "jest --watchAll"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "publishConfigGithub": {
     "access": "public",
@@ -87,6 +88,6 @@
     "rollup-plugin-uglify": "~6"
   },
   "dependencies": {
-    "@cbevins/fire-behavior-simulator": "~0"
+    "@cbevins/fire-behavior-simulator": "0.5.1"
   }
 }
