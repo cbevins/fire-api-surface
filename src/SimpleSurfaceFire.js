@@ -33,6 +33,7 @@ export class SimpleSurfaceFire {
     // Step 3 - specify the fire behavior variables to be produced
     // (See ./docs/Variables.md for complete list of 1200+ names)
     const selected = [
+      'surface.primary.fuel.model.behave.parms.cured.herb.fraction', // ratio
       'surface.primary.fuel.fire.effectiveWindSpeed', // ft/min
       'surface.primary.fuel.fire.flameResidenceTime', // min
       'surface.primary.fuel.fire.heading.fromUpslope', // degrees
@@ -88,6 +89,9 @@ export class SimpleSurfaceFire {
         headingFromUpslope: this.dag.node('surface.primary.fuel.fire.heading.fromUpslope').value(), // degrees
         heatPerUnitArea: this.dag.node('surface.primary.fuel.fire.heatPerUnitArea').value(), // btu/ft2
         reactionIntensity: this.dag.node('surface.primary.fuel.fire.reactionIntensity').value() // btu/ft2/min
+      },
+      fuel: {
+        curedHerb: this.dag.node('surface.primary.fuel.model.behave.parms.cured.herb.fraction').value()
       },
       ellipse: {
         area: this.dag.node('surface.fire.ellipse.size.area').value(), // ft2
