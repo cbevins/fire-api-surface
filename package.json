@@ -1,11 +1,11 @@
 {
   "name": "@cbevins/fire-api-surface",
   "version": "0.1.0",
-  "description": "fire-api-surface is a template repo for developing node library packages",
+  "description": "fire-api-surface is an API for estimating wildland surface fire behavior",
   "author": "Collin D. Bevins <cbevins@montana.com>",
   "license": "MIT",
   "keywords": [
-    "template"
+    "surface wildland fire behavior"
   ],
   "repository": {
     "type": "git",
@@ -59,6 +59,7 @@
       "!**/index.js",
       "!**/coverage/**",
       "!**/dist/**",
+      "!**/examples/**",
       "!**/untracked/**",
       "!**/utils/**",
       "!**/node_modules/**",
