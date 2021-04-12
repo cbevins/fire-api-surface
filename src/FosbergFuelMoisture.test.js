@@ -1,4 +1,4 @@
-import { fuelMoisture, reference, correction } from './FosbergFuelMoisture.js'
+import { fm1, fm10, fm100, reference, correction } from './FosbergFuelMoisture.js'
 
 const Obs = {
   db: 60,
@@ -134,6 +134,8 @@ test('Fosberg Table D, Correction for Nov, Dec, Jan', () => {
 test('Fosberg fuel moisture', () => {
   expect(reference(95, 0.05)).toEqual(0.01)
   expect(correction(1, 0.9, 270, 0.4, 23, 'level')).toEqual(0.05)
-  expect(fuelMoisture(95, 0.05, 1, 0.9, 270, 0.4, 23, 'level'))
-    .toBeCloseTo(0.06, 12)
+  const tl1h = fm1(95, 0.05, 1, 0.9, 270, 0.4, 23, 'level')
+  expect(tl1h).toBeCloseTo(0.06, 12)
+  expect(fm10(tl1h)).toBeCloseTo(0.08, 12)
+  expect(fm100(tl1h)).toBeCloseTo(0.1, 12)
 })

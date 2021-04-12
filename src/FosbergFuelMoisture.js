@@ -100,11 +100,15 @@ const Month = [2, 2, 1, 1, 1, 0, 0, 0, 1, 1, 1, 2, 2]
 // Mapping from site position to elevational category
 const Position = { below: 0, level: 1, above: 2 }
 
-export function fuelMoisture (db, rh, aspect, slope, shading, month, hour, pos = 'level') {
+export function fm1 (db, rh, aspect, slope, shading, month, hour, pos = 'level') {
   const rfm = reference(db, rh)
   const cor = correction(aspect, slope, shading, month, hour, pos)
   return rfm + cor
 }
+
+export function fm10 (fm1) { return fm1 + 0.02 }
+
+export function fm100 (fm1) { return fm1 + 0.04 }
 
 /**
  * Returns Fosberg's 'Reference Fuel Moisture'
