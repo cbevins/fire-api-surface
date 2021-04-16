@@ -1,6 +1,7 @@
 /**
  * The following functions are taken from:
  * https://www.movable-type.co.uk/scripts/latlong.html
+ * and adapted from his dms.js and latlon-spherical.js files.
  *
  * From the author:
  *
