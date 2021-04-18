@@ -107,6 +107,7 @@ function fireForecast (lat, lon, startTime, endTime,
 
 // configure the time frame up to 6 hours back and 15 days out
 const now = moment.utc()
-const startTime = moment.utc(now).add(0, 'minutes').toISOString()
+// console.log(now)
+const startTime = moment.utc(now).startOf('hour').toISOString()
 const endTime = moment.utc(now).add(24, 'hours').toISOString()
 fireForecast(46.85722, -114.00723, startTime, endTime, 'gs4')
