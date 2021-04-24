@@ -1,4 +1,5 @@
 import {
+  clockTime,
   daysInMonth,
   decimalDaysToDhms,
   decimalHoursToDhms,
@@ -13,6 +14,8 @@ import {
   dowName,
   doyToYmd,
   easterDay,
+  formatDate,
+  formatTime,
   isGregorian,
   isLeapYear,
   jdToMjd,
@@ -332,4 +335,23 @@ test('16: dhmsTo<Something>() default args', () => {
   expect(dhmsToMinutes(1)).toEqual(60 * 24)
   expect(dhmsToSeconds(1)).toEqual(60 * 60 * 24)
   expect(dhmsToMs(1)).toEqual(60 * 60 * 24 * 1000)
+})
+
+test('17: formatDate()', () => {
+  const jd = ymdToJd(1952, 9, 4)
+  expect(formatDate(jd)).toEqual('1952-09-04')
+  expect(formatDate(1952, 9, 4)).toEqual('1952-09-04')
+  expect(formatDate(52, 9, 4)).toEqual('0052-09-04')
+  expect(formatDate(1, 1, 1)).toEqual('0001-01-01')
+  expect(formatDate(0, 0, 0)).toEqual('0000-00-00')
+})
+
+test('18: clockTime(), formatTime()', () => {
+  expect(formatTime(0, 0, 0)).toEqual('00:00:00')
+  expect(formatTime(1, 1, 1)).toEqual('01:01:01')
+  expect(formatTime(4, 20, 30, 123)).toEqual('04:20:30.123')
+
+  expect(clockTime(0, 0, 0)).toEqual('00:00:00')
+  expect(clockTime(1, 1, 1)).toEqual('01:01:01')
+  expect(clockTime(4, 20, 30, 123)).toEqual('04:20:30')
 })
