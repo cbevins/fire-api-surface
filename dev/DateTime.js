@@ -31,11 +31,15 @@ export class DateTime {
     return [this._hour, this._minute, this._second, this._millisecond]
   }
 
-  asYmd () {
+  asYmdArray () {
     return [this._year, this._month, this._day]
   }
 
+  clockTime () { return Cal.clockTime(this._hour, this._minute, this._second) }
+
   day () { return this._day }
+
+  daysInMonth () { return Cal.daysInMonth(this._year, this._month) }
 
   decimalTime () {
     return Cal.dhmsToDays(0, this._hour, this._minute, this._second, this._millisecond)
@@ -49,7 +53,15 @@ export class DateTime {
 
   doy () { return this._doy }
 
+  formatDate () { return Cal.formatDate(this._year, this._month, this._day) }
+
+  formatTime () { return Cal.formatTime(this._hour, this._minute, this._second) }
+
   hour () { return this._hour }
+
+  isGregorian () { return isGregorian(this._year, this._month, this._day) }
+
+  isLeapYear () { return Cal.isLeapYear(this._year) }
 
   jd () { return this._jd }
 
