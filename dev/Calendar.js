@@ -5,6 +5,18 @@ const DaysToMonthLeap = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335] 
 const DaysToMonth1582 = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 294, 324] // 1582
 
 /**
+ * Formats time as hh:mm:ss
+ * @param {number} h Hours, either integer [0..23] or decimal hours
+ * @param {number} m Minutes of the hours (if h not decimal hours)
+ * @param {number} s Seconds of the minute
+ * @returns {string} Time formatted as 24-h hh:mm:ss
+ */
+export function clockTime (h, m, s) {
+  if (arguments.length === 1) [, h, m, s] = decimalHoursToDhms(h)
+  return `${int(h, 2)}:${int(m, 2)}:${int(s, 2)}`
+}
+
+/**
  * Determines the number of days in the month for the year.
  *
  * The Julian calendar (prior to the Gregorian calendar reform) has 29 days in February
@@ -160,6 +172,40 @@ export function easterDay (year) {
   const month = n
   return [month, day]
 }
+
+/**
+ * Formats date as yyy-mm-dd
+ * @param {number} y Year or Julian day number
+ * @param {number} m Month of the year [1..12]
+ * @param {number} d Day of the month
+ * @returns {string} Date formatted as yyy-mm-dd
+ */
+export function formatDate (y, m, d) {
+  if (arguments.length === 1) [y, m, d] = jdToYmd(y)
+  return `${int(y, 4)}-${int(m, 2)}-${int(d, 2)}`
+}
+
+/**
+ * Formats time as hh:mm:ss.uuu (see also clockTime())
+ * @param {number} h Hours, either integer [0..23] or decimal hours
+ * @param {number} m Minutes of the hours (if h not decimal hours)
+ * @param {number} s Seconds of the minute
+ * @param {number} ms Milleseconds
+ * @returns {string} Time formatted as 24-h hh:mm:ss
+ */
+export function formatTime (h, m, s, ms) {
+  if (arguments.length === 1) [, h, m, s, ms] = decimalHoursToDhms(h)
+  const str = `${int(h, 2)}:${int(m, 2)}:${int(s, 2)}`
+  return (ms > 0) ? str + `.${int(ms, 3)}` : str
+}
+
+/**
+ * Formats a number as an integer with leading zeros
+ * @param {number} number Number to be formatted
+ * @param {number} width Final string width
+ * @returns {string} String of number padded to width with leading zeros
+ */
+function int (number, width) { return number.toFixed(0).padStart(width, '0') }
 
 /**
  * Determines if the year, month, and day occurs after the Gregorian calendar reform
