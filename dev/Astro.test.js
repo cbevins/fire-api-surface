@@ -1,5 +1,5 @@
 import * as Astro from './Astro.js'
-import { clockTime, formatDate, ymdToJd } from './Calendar.js'
+import { clockTime, formatDate } from './Calendar.js'
 
 const lat = 46.857
 const lon = -114.007
@@ -63,18 +63,6 @@ test('5: astronomical()', () => {
   expect(e.visible.never).toEqual(false)
 })
 
-test('6: moonPhase()', () => {
-  const e = Astro.moonPhase(year, month, day, gmt)
-  let str = `Moon Phases for JD ${ymdToJd(year, month, day)}\n`
-  str += `Prev New  ${e.q0} ${formatDate(e.q0)} ${clockTime(e.q0)}\n`
-  str += `First Qtr ${e.q1} ${formatDate(e.q1)} ${clockTime(e.q1)}\n`
-  str += `Full      ${e.q2} ${formatDate(e.q2)} ${clockTime(e.q2)}\n`
-  str += `Third Qtr ${e.q3} ${formatDate(e.q3)} ${clockTime(e.q3)}\n`
-  str += `Next New  ${e.q4} ${formatDate(e.q4)} ${clockTime(e.q4)}\n`
-  console.log(str)
-  expect(e.age).toEqual(1)
-})
-
 function fmt (n, e) {
   let str = `${n.padEnd(9, ' ')}`
   str += `  ${e.rise.time.toFixed(6).padStart(9, ' ')}`
@@ -84,6 +72,7 @@ function fmt (n, e) {
   return str
 }
 
+// eslint-disable-next-line no-unused-vars
 function daily (name, lat, lon, gmt, y, m, d) {
   let str = `Daily Rise-Set Time for ${name} on ${formatDate(y, m, d)}\n`
   str += '               Rises (or Dawn)        Sets (or Dusk)\n'

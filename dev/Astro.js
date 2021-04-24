@@ -47,14 +47,6 @@ export function sun (lat, lon, gmtDiff, year, month, day) {
 // Private API
 // -----------------------------------------------------------------------------
 
-// dD/dT of mean elongation of moon from sun in revolutions per century
-// (1236.853086, see Montenbruck & Pfleger page 179).
-const D1 = 1236.853086
-
-// Mean elongation D of the moon from the sun for the epoch J2000
-// in units of 1 rev = 360 degrees (0.827361, see Montenbruck & Pfleger, page 179)
-const D0 = 0.827361
-
 function asRiseSet ([rises, rise, sets, set, above]) {
   return {
     rise: {
@@ -84,66 +76,6 @@ function cs (degrees) { return Math.cos(degrees * Math.PI / 180) }
  * @param {number} value ANy value
  */
 function fractionalPart (value) { return value - Math.trunc(value) }
-
-/**
- * Improves an approximation for the time of the new moon.
- *
- * This is an internal function from Montenbruck and Pfleger that improves
- * an approximation \a t0 for the time of the new moon and finds the
- * ecliptic longitude \a b of the moon for that date.
- *
- * Called only by the lunation routine newMoonGMT().
- *
- * @param {number} t0 Time in Julian centuries since J2000 (t = (jd - 2451545) / 36526).
- *
- * Note: also calculates 'b', the ecliptic longitude of the moon for that date,
- * although it does not return it.
- *
- * @returns {number} The adjusted time \a t0 (and the ecliptic longitude b) of the moon
- *  for the date are returned in the passed arguments.
- */
-function improveMoon (t0) {
-  const p2 = 2 * Math.PI
-  // Store the input time */
-  const t = t0
-  // Mean anomoly of the moon
-  const l = p2 * fractionalPart(0.374897 + 1325.552410 * t)
-  // Mean anomoly of the sun
-  const ls = p2 * fractionalPart(0.993133 + 99.997361 * t)
-  // Mean elongation of Moon-Sun
-  const d = p2 * (fractionalPart(0.5 + D0 + D1 * t) - 0.5)
-  // Mean argument of latitude
-  const f = p2 * fractionalPart(0.259086 + 1342.227825 * t)
-
-  // Periodic perturbations of the lunar and solar longitude (in ")
-  const dlm = 22640 * Math.sin(l) -
-      4586 * Math.sin(l - 2 * d) +
-      2370 * Math.sin(2 * d) +
-      769 * Math.sin(2 * l) -
-      668 * Math.sin(ls) -
-      412 * Math.sin(2 * f) -
-      212 * Math.sin(2 * l - 2.0 * d) -
-      206 * Math.sin(l + ls - 2.0 * d) +
-      192 * Math.sin(l + 2 * d) -
-      165 * Math.sin(ls - 2 * d) -
-      125 * Math.sin(d) -
-      110 * Math.sin(l + ls) +
-      148 * Math.sin(l - ls) -
-      55 * Math.sin(2 * f - 2 * d)
-
-  const dls = 6893 * Math.sin(ls) + 72 * Math.sin(2 * ls)
-
-  // Difference of the true longitudes of moon and sun in revolutions
-  const dlambda = d / p2 + (dlm - dls) / 1296000
-
-  // Correction for the time of the new moon
-  const tcorrection = t - dlambda / D1
-
-  // Ecliptic latitude B of the moon in degrees
-  // const arc = 206264.8062 // Arcseconds per radian
-  // const bMoonNew = (18520 * Math.sin(f + dlm / arc) - 526 * Math.sin(f - 2 * d)) / 3600
-  return tcorrection
-}
 
 /**
  * Determines the local sidereal time for the modified Julian date and longitude.
@@ -232,49 +164,6 @@ function miniMoon (t) {
   let ra = (48 / p2) * Math.atan(y / (x + rho))
   ra = ra < 0 ? ra + 24 : ra
   return [ra, dec]
-}
-
-// Determine moon phases for each day.
-export function moonPhase (year, month, day, gmtDiff) {
-  const jd = ymdToJd(year, month, day)
-  let prev = newMoonGMT(year, 0, gmtDiff)
-  for (let period = 1; period <= 14; period++) {
-    const next = newMoonGMT(year, period, gmtDiff)
-    if (next >= jd) {
-      return {
-        jd: jd,
-        period: period,
-        age: (jd - prev), // age of the moon (degrees)
-        q0: prev, // JD of previous new moon (phase = 0)
-        q1: prev + 0.25 * (next - prev), // JD pf 1st quadrance (phase = 0.5)
-        q2: prev + 0.50 * (next - prev), // JD of full (phase = 1)
-        q3: prev + 0.75 * (next - prev), // JD of 3rd (gibbous) quadrance (phase = 0.5)
-        q4: next // JD of next new moon (phase = 0)
-      }
-    }
-    prev = next
-  }
-}
-
-/**
- * Determines the GMT time of the period of the new moon for the year.
- *
- *  @param {integer} year Julian-Gregorian calendar year (-4712 or later).
- *  @param {integer} period New moon of the year (1 === first new moon).
- *  Calling this with *period* === 0 will get the last new moon before the year.
- *  @returns {number} The Julian date (GMT) of the \a period's new moon for the \a year.
- */
-export function newMoonGMT (year, period, gmtDiff = 0) {
-  // Derive lunation number
-  const lunation = Math.floor(D1 * (year - 2000) / 100) + period
-  const newMoon1 = (lunation - D0) / D1
-
-  // Improve the estimate
-  const newMoon2 = improveMoon(newMoon1)
-  const newMoon3 = improveMoon(newMoon2)
-
-  // Greenwich time of new moon for this lunation paeriod
-  return 36525 * newMoon3 + 51544.5 + 2400000.5 + gmtDiff / 24
 }
 
 /**
