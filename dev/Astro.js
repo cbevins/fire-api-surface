@@ -1,78 +1,163 @@
 import { ymdToJd } from './Calendar.js'
 
-const Radians = 0.0174532925199433
-
-// Enumerates the possible events that can be determined for a date and/or time.
-export const UserTime = 'User Time'
-export const SystemTime = 'System Time'
-export const SunRise = 'Sun Rise'
-export const SunSet = 'Sun Set'
-export const MoonRise = 'Moon Rise'
-export const MoonSet = 'Moon Set'
-export const CivilDawn = 'Civil Dawn'
-export const CivilDusk = 'Civil Dusk'
-export const NauticalDawn = 'Nautical Dawn'
-export const NauticalDusk = 'Nautical Dusk'
-export const AstronomicalDawn = 'Astronomical Dawn'
-export const AstronomicalDusk = 'Astronomical Dusk'
-export const SpringEquinox = 'Spring Equinox'
-export const SummerSolstice = 'Summer Solstice'
-export const FallEquinox = 'Fall Equinox'
-export const WinterSolstice = 'Winter Solstice'
-export const Easter = 'Easter'
-export const NewMoon = 'New Moon'
-export const FullMoon = 'Full Moon'
-
-// Enumerates the possible conditions that can result from a calendar date-time operation.
-export const None = 'None'
-export const ValidDateTime = 'Valid DateTime'
-export const ValidDate = 'Valid Date'
-export const ValidTime = 'Valid Time'
-export const InvalidYear = 'Invalid Year'
-export const InvalidMonth = 'Invalid Month'
-export const InvalidDay = 'Invalid Day'
-export const InvalidHour = 'Invalid Hour'
-export const InvalidMinute = 'Invalid Minute'
-export const InvalidSecond = 'Invalid Second'
-export const InvalidMillisecond = 'Invalid Millisecond'
-export const Rises = 'Rises'
-export const NeverRises = 'Never Rises'
-export const Sets = 'Sets'
-export const NeverSets = 'Never Sets'
-export const AlwaysVisible = 'Always Visible'
-export const NeverVisible = 'Never Visible'
-export const AlwaysLight = 'Always Light'
-export const AlwaysDark = 'Always Dark'
+// -----------------------------------------------------------------------------
+// Public API
+// -----------------------------------------------------------------------------
 
 /**
- * Cosine function that operates on \a x degrees.
+ * Determines sun or moon rise/set times,
+ * or civil, nautical, astronomical dawn/dusk times
  *
- * @param {number} degrees Angle in degrees.
- * @returns {number} Cosine in radians of the passed number of degrees.
+ * From Montenbruch and Pfleger, pages 51-54.
+ *
+ * @param {number} lat Decimal degrees latitude north (+) or south (-) of equator.
+ * @param {number} lon Decimal degrees longitude east (+) or west (-) of Greenwich.
+ * @param {number} gmtDiff Local hour difference from GMT
+ * @param {integer} year
+ * @param {integer} month
+ * @param {integer} day
+ *
  */
-function cs (degrees) { return Math.cos(Radians * degrees) }
+export function astronomical (lat, lon, gmtDiff, year, month, day) {
+  // Astronomical twilight occurs at -18 degrees
+  return asRiseSet(riseSet(lat, lon, gmtDiff, year, month, day, -18))
+}
 
-/*! \brief Determines the fractional part of the passed \a value.
- *
- *  @returns Returns the fractional part of the passed \a value.
+export function civil (lat, lon, gmtDiff, year, month, day) {
+  // Civil twilight occurs at -6 degrees
+  return asRiseSet(riseSet(lat, lon, gmtDiff, year, month, day, -6))
+}
+
+export function moon (lat, lon, gmtDiff, year, month, day) {
+  // Moonrise/moonset occurs at h = +8 arc-minutes
+  return asRiseSet(riseSet(lat, lon, gmtDiff, year, month, day, (8 / 60), true))
+}
+
+export function nautical (lat, lon, gmtDiff, year, month, day) {
+  // Nautical twilight occurs at -12 degrees
+  return asRiseSet(riseSet(lat, lon, gmtDiff, year, month, day, -12))
+}
+
+export function sun (lat, lon, gmtDiff, year, month, day) {
+  // Sunrise/sunset occurs at h = -50 arc-minutes
+  return asRiseSet(riseSet(lat, lon, gmtDiff, year, month, day, (-50 / 60)))
+}
+
+// -----------------------------------------------------------------------------
+// Private API
+// -----------------------------------------------------------------------------
+
+// dD/dT of mean elongation of moon from sun in revolutions per century
+// (1236.853086, see Montenbruck & Pfleger page 179).
+const D1 = 1236.853086
+
+// Mean elongation D of the moon from the sun for the epoch J2000
+// in units of 1 rev = 360 degrees (0.827361, see Montenbruck & Pfleger, page 179)
+const D0 = 0.827361
+
+function asRiseSet ([rises, rise, sets, set, above]) {
+  return {
+    rise: {
+      occurs: rises,
+      time: rise
+    },
+    set: {
+      occurs: sets,
+      time: set
+    },
+    visible: {
+      always: (!rises && !sets && above),
+      diurnal: (rises && sets),
+      never: (!rises && !sets && !above)
+    }
+  }
+}
+
+/**
+ * @returns {number} Cosine in radians of the passed number of degrees.
+ * @param {number} degrees Angle in degrees.
+ */
+function cs (degrees) { return Math.cos(degrees * Math.PI / 180) }
+
+/**
+ * @returns The fractional part of the passed value.
+ * @param {number} value ANy value
  */
 function fractionalPart (value) { return value - Math.trunc(value) }
 
-export function julianCenturies (jd) { return (jd - 2451545) / 36526 }
+/**
+ * Improves an approximation for the time of the new moon.
+ *
+ * This is an internal function from Montenbruck and Pfleger that improves
+ * an approximation \a t0 for the time of the new moon and finds the
+ * ecliptic longitude \a b of the moon for that date.
+ *
+ * Called only by the lunation routine newMoonGMT().
+ *
+ * @param {number} t0 Time in Julian centuries since J2000 (t = (jd - 2451545) / 36526).
+ *
+ * Note: also calculates 'b', the ecliptic longitude of the moon for that date,
+ * although it does not return it.
+ *
+ * @returns {number} The adjusted time \a t0 (and the ecliptic longitude b) of the moon
+ *  for the date are returned in the passed arguments.
+ */
+function improveMoon (t0) {
+  const p2 = 2 * Math.PI
+  // Store the input time */
+  const t = t0
+  // Mean anomoly of the moon
+  const l = p2 * fractionalPart(0.374897 + 1325.552410 * t)
+  // Mean anomoly of the sun
+  const ls = p2 * fractionalPart(0.993133 + 99.997361 * t)
+  // Mean elongation of Moon-Sun
+  const d = p2 * (fractionalPart(0.5 + D0 + D1 * t) - 0.5)
+  // Mean argument of latitude
+  const f = p2 * fractionalPart(0.259086 + 1342.227825 * t)
+
+  // Periodic perturbations of the lunar and solar longitude (in ")
+  const dlm = 22640 * Math.sin(l) -
+      4586 * Math.sin(l - 2 * d) +
+      2370 * Math.sin(2 * d) +
+      769 * Math.sin(2 * l) -
+      668 * Math.sin(ls) -
+      412 * Math.sin(2 * f) -
+      212 * Math.sin(2 * l - 2.0 * d) -
+      206 * Math.sin(l + ls - 2.0 * d) +
+      192 * Math.sin(l + 2 * d) -
+      165 * Math.sin(ls - 2 * d) -
+      125 * Math.sin(d) -
+      110 * Math.sin(l + ls) +
+      148 * Math.sin(l - ls) -
+      55 * Math.sin(2 * f - 2 * d)
+
+  const dls = 6893 * Math.sin(ls) + 72 * Math.sin(2 * ls)
+
+  // Difference of the true longitudes of moon and sun in revolutions
+  const dlambda = d / p2 + (dlm - dls) / 1296000
+
+  // Correction for the time of the new moon
+  const tcorrection = t - dlambda / D1
+
+  // Ecliptic latitude B of the moon in degrees
+  // const arc = 206264.8062 // Arcseconds per radian
+  // const bMoonNew = (18520 * Math.sin(f + dlm / arc) - 526 * Math.sin(f - 2 * d)) / 3600
+  return tcorrection
+}
 
 /**
- * Determines the local sidereal time for the modified Julian date
- *  \a mjd and longitude \a lambda.
+ * Determines the local sidereal time for the modified Julian date and longitude.
  *
- *  From Montenbruch and Pfleger, page 41.
+ * From Montenbruch and Pfleger, page 41.
  *
- *  @param mjd Modified Julian date (JD - 2400000.5)
- *  @param lambda Longitude (positive \a west of Greenwich, negative \a east
- *  of Greenwich; Munich is lambda = -11.6 degrees).
- *
- *  @returns {number} The local sidereal time for \a mjd and \a lambda.
+ * @param {number} mjd Modified Julian date (JD - 2400000.5)
+ * @param {number} lambda Longitude (NOTE:
+ * - must be POSITIVE for WEST of Greenwich,
+ * - must be NEGATIVE for EAST of Greenwich;
+ * - i.e, Munich lambda = -11.6 degrees, while Missoula lambda = 114.0
+ * @returns {number} The local sidereal time for the modified Julian date and lambda.
  */
-export function localMeanSiderealTime (mjd, lambda) {
+function localMeanSiderealTime (mjd, lambda) {
   const mjd0 = Math.floor(mjd)
   const ut = 24 * (mjd - mjd0)
   const t = (mjd0 - 51544.5) / 36525
@@ -84,15 +169,14 @@ export function localMeanSiderealTime (mjd, lambda) {
 /**
  * Determines low precision lunar coordinates (approximately 1 arc minute).
  *
- *  From Montenbruch and Pfleger, page 38.
+ * From Montenbruch and Pfleger, page 38.
  *
- *  @param t Time in Julian centuries since J2000 (t = (jd - 2451545) / 36526).
- *
+ * @param {number} t Time in Julian centuries since J2000 (t = (jd - 2451545) / 36526).
  * @returns {array} [rightAscension, declination]
  *  - right ascension (hours, equinox of date) and
  *  - declination (degrees)
  */
-export function miniMoon (t) {
+function miniMoon (t) {
   // * Two pies
   const p2 = 2 * Math.PI
   // Arc-seconds per radian
@@ -150,6 +234,49 @@ export function miniMoon (t) {
   return [ra, dec]
 }
 
+// Determine moon phases for each day.
+export function moonPhase (year, month, day, gmtDiff) {
+  const jd = ymdToJd(year, month, day)
+  let prev = newMoonGMT(year, 0, gmtDiff)
+  for (let period = 1; period <= 14; period++) {
+    const next = newMoonGMT(year, period, gmtDiff)
+    if (next >= jd) {
+      return {
+        jd: jd,
+        period: period,
+        age: (jd - prev), // age of the moon (degrees)
+        q0: prev, // JD of previous new moon (phase = 0)
+        q1: prev + 0.25 * (next - prev), // JD pf 1st quadrance (phase = 0.5)
+        q2: prev + 0.50 * (next - prev), // JD of full (phase = 1)
+        q3: prev + 0.75 * (next - prev), // JD of 3rd (gibbous) quadrance (phase = 0.5)
+        q4: next // JD of next new moon (phase = 0)
+      }
+    }
+    prev = next
+  }
+}
+
+/**
+ * Determines the GMT time of the period of the new moon for the year.
+ *
+ *  @param {integer} year Julian-Gregorian calendar year (-4712 or later).
+ *  @param {integer} period New moon of the year (1 === first new moon).
+ *  Calling this with *period* === 0 will get the last new moon before the year.
+ *  @returns {number} The Julian date (GMT) of the \a period's new moon for the \a year.
+ */
+export function newMoonGMT (year, period, gmtDiff = 0) {
+  // Derive lunation number
+  const lunation = Math.floor(D1 * (year - 2000) / 100) + period
+  const newMoon1 = (lunation - D0) / D1
+
+  // Improve the estimate
+  const newMoon2 = improveMoon(newMoon1)
+  const newMoon3 = improveMoon(newMoon2)
+
+  // Greenwich time of new moon for this lunation paeriod
+  return 36525 * newMoon3 + 51544.5 + 2400000.5 + gmtDiff / 24
+}
+
 /**
  * Determines low precision solar coordinates (approximately 1 arc minute).
  *
@@ -160,7 +287,7 @@ export function miniMoon (t) {
  *  - right ascension right ascension (hours, equinox of date).
  *  - declination (degrees, equinox of date).
  */
-export function miniSun (t) {
+function miniSun (t) {
   const p2 = 2 * Math.PI
   const coseps = 0.91748
   const sineps = 0.39778
@@ -197,7 +324,7 @@ export function miniSun (t) {
  * - z2 is the second root within [-1, +1] (if two roots, i.e., nz=2), otherwise null
  * - nz is the number of roots within the interval [-1, +1]
  */
-export function quadraticRoots (yMinus, y0, yPlus) {
+function quadraticRoots (yMinus, y0, yPlus) {
   let nz = 0
   let z1 = null
   let z2 = null
@@ -220,70 +347,21 @@ export function quadraticRoots (yMinus, y0, yPlus) {
   return [xe, ye, z1, z2, nz]
 }
 
-/**
- * Determines the rise or set times of the sun, moon, dawn, or dusk
- * at an observer's position.
- *
- *  From Montenbruch and Pfleger, pages 51-54.
- *
- *  @param jd Julian day number (as determined by Calendar.ymdToJd())
- *  @param lat Decimal degrees latitude north (+) or south (-) of equator.
- *  @param lon Decimal degrees longitude east (+) or west (-) of Greenwich.
- *  @param event Event to determine, may be one of:
- *  - SunRise, SunSet
- *  - MoonRise, MoonSet
- *  - AstronomicalDawn, AstronomicalDusk
- *  - CivilDawn, CivilDusk
- *  - NauticalDawn, NauticalDusk
- *
- * @returns {array} [time, flag] where
- *  - time is the decimals hours of the event.
- *  - flag is one of:
- *  - Rises (only if Event is SunRise or MoonRise)
- *  - NeverRises (only if Event is MoonRise)
- *  - Sets (only if Event is SunSet or MoonSet)
- *  - NeverSets (only if Event is MoonSet)
- *  - Visible (only if Event is SunRise, SunSet, MoonRise, or MoonSet)
- *  - Invisible  (only if Event is SunRise, SunSet, MoonRise, or MoonSet)
- *  - AlwaysDark (only if Event is AstronomicalDawn, AstronomicalDusk,
- *    CivilDawn, CivilDusk, NauticalDawn, or NauticalDusk)
- *  - AlwaysLight (only if Event is AstronomicalDawn, AstronomicalDusk,
- *    CivilDawn, CivilDusk, NauticalDawn, or NauticalDusk)
- */
-export function sun (lat, lon, gmtDiff, year, month, day) {
-  const jd = ymdToJd(year, month, day)
-}
-export function riseSet (event, jd, lat, lon, gmtDiff) {
+function riseSet (lat, lon, gmtDiff, year, month, day, pos, isMoon = false) {
   // M&P want west longitudes to be positive and east to be negative
   lon = -lon // So swap sign
-  const mjd = Math.floor(jd - 2400000.5) // Convert to modified Julian date
-  const amjd = mjd - gmtDiff / 24 // Adjust modified JD for GMT difference
 
-  // Determine the parameters for this type of event
-  const Event = new Map([
-    // Sunrise/sunset occurs at h = -50 minutes
-    [SunRise, { sinh0: sn(-50 / 60), doRise: true, doSet: false }],
-    [SunSet, { sinh0: sn(-50 / 60), doRise: false, doSet: true }],
-    // Moonrise/moonset occurs at h = +8 minutes
-    [MoonRise, { sinh0: sn(8 / 60), doRise: true, doSet: false }],
-    [MoonSet, { sinh0: sn(8 / 60), doRise: false, doSet: true }],
-    // Civil twilight occurs at -6 degrees
-    [CivilDawn, { sinh0: sn(-6 / 60), doRise: true, doSet: false }],
-    [CivilDusk, { sinh0: sn(-6 / 60), doRise: false, doSet: true }],
-    // Nautical twilight occurs at -12 degrees
-    [NauticalDawn, { sinh0: sn(-12 / 60), doRise: true, doSet: false }],
-    [NauticalDusk, { sinh0: sn(-12 / 60), doRise: false, doSet: true }],
-    // Astronomical twilight occurs at -18 degrees
-    [AstronomicalDawn, { sinh0: sn(-18 / 60), doRise: true, doSet: false }],
-    [AstronomicalDusk, { sinh0: sn(-18 / 60), doRise: false, doSet: true }]
-  ])
-  const ev = Event.get(event)
+  // Convert YMD to modified Julian date adjusted for gmtDiff
+  const jd = ymdToJd(year, month, day)
+  const mjd = Math.floor(jd - 2400000.5)
+  const amjd = mjd - gmtDiff / 24
 
-  // Setup for search loop
+  // Setup the search loop
+  const sinh0 = sn(pos)
   const sphi = sn(lat)
   const cphi = cs(lat)
   let hour = 1
-  let yMinus = sineAltitude(event, amjd, hour - 1, lon, cphi, sphi) - ev.sinh0
+  let yMinus = sineAltitude(amjd, hour - 1, lon, cphi, sphi, isMoon) - sinh0
   const aboveHorizon = (yMinus > 0)
   let rises = false
   let sets = false
@@ -291,8 +369,8 @@ export function riseSet (event, jd, lat, lon, gmtDiff) {
   // Loop over search intervals from [0h-2h] to [22h-24h]
   let ye, zero1, zero2, nz, utrise, utset
   do {
-    const y0 = sineAltitude(event, amjd, hour, lon, cphi, sphi) - ev.sinh0
-    const yPlus = sineAltitude(event, amjd, hour + 1, lon, cphi, sphi) - ev.sinh0;
+    const y0 = sineAltitude(amjd, hour, lon, cphi, sphi, isMoon) - sinh0
+    const yPlus = sineAltitude(amjd, hour + 1, lon, cphi, sphi, isMoon) - sinh0;
     [, ye, zero1, zero2, nz] = quadraticRoots(yMinus, y0, yPlus)
     if (nz === 0) { /* no roots, so nothing to do */ } else if (nz === 1) { // 1 root
       if (yMinus < 0) {
@@ -320,29 +398,15 @@ export function riseSet (event, jd, lat, lon, gmtDiff) {
     yMinus = yPlus
     hour += 2
   } while (hour < 24.5)
+  return [rises, utrise, sets, utset, aboveHorizon]
+}
 
-  // Store results
-  let result = []
-  if (rises || sets) {
-    if (ev.doRise) {
-      result = (rises) ? [utrise, Rises] : [null, NeverRises]
-    } else if (ev.doSet) {
-      result = (sets) ? [utset, Sets] : [null, NeverSets]
-    }
-  } else { // No rise or set occurred
-    let flag
-    if (aboveHorizon) { // If above horizon, then always visible or always light
-      flag = (event === SunRise || event === SunSet || event === MoonRise || event === MoonSet)
-        ? AlwaysVisible
-        : AlwaysLight
-    } else { // If below horizon, then always invisible or always dark
-      flag = (event === SunRise || event === SunSet || event === MoonRise || event === MoonSet)
-        ? NeverVisible
-        : AlwaysDark
-    }
-    result = [null, flag]
-  }
-  return result
+function sineAltitude (mjd0, hour, lambda, cphi, sphi, isMoon = false) {
+  const mjd = mjd0 + hour / 24
+  const t = (mjd - 51544.5) / 36525 // Julian centuries
+  const [ra, dec] = isMoon ? miniMoon(t) : miniSun(t)
+  const tau = 15 * (localMeanSiderealTime(mjd, lambda) - ra)
+  return sphi * sn(dec) + cphi * cs(dec) * cs(tau)
 }
 
 /**
@@ -351,26 +415,4 @@ export function riseSet (event, jd, lat, lon, gmtDiff) {
  *  @param degrees Angle in degrees.
  *  @returns {number} Sine in radians of the passed number of degrees.
  */
-function sn (degrees) { return Math.sin(Radians * degrees) }
-
-/**
- * Determines the sine of the altitude of the moon or sun.
- *
- *  From Montenbruck and Pfleger, page 52.
- *
- *  @param event One of the #CDT_Event enumerations.
- *  @param mjd0 Modified Julian date.
- *  @param hour Hour of the day.
- *  @param lambda Longitude in degrees (west of Greenwich is positive).
- *  @param cphi Cosine of the latitude
- *  @param sphi Sine of the latitude
- *
- *  @returns {number} Sine of the altitude of the moon or sun.
- */
-export function sineAltitude (event, mjd0, hour, lambda, cphi, sphi) {
-  const mjd = mjd0 + hour / 24
-  const t = (mjd - 51544.5) / 36525
-  const [ra, dec] = (event === MoonRise || event === MoonSet) ? miniMoon(t) : miniSun(t)
-  const tau = 15 * (localMeanSiderealTime(mjd, lambda) - ra)
-  return sphi * sn(dec) + cphi * cs(dec) * cs(tau)
-}
+function sn (degrees) { return Math.sin(degrees * Math.PI / 180) }
