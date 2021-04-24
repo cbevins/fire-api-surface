@@ -1,4 +1,4 @@
-import { Rmap } from './Rmap.js'
+import { Rmap } from './index.js'
 
 test('1 Rmap()', () => {
   const rmap = new Rmap()

@@ -6,7 +6,7 @@ import {
   reaRh,
   summerSimmerIndex,
   windChill
-} from './TemperatureHumidity.js'
+} from './index.js'
 
 test('1 dewPoint(), relativeHumidity(), reaRh(), and reaDewPoint()', () => {
   let dp = dewPoint(80, 60, 0)

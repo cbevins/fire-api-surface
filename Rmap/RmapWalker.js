@@ -1,4 +1,4 @@
-import { Rmap } from './Rmap.js'
+import { Rmap } from './index.js'
 
 function circleWalk (rounds) {
   const rmap = new Rmap(8, 6)

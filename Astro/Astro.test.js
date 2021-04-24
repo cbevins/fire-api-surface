@@ -1,5 +1,5 @@
-import * as Astro from './Astro.js'
-import { clockTime, formatDate } from './Calendar.js'
+import * as Astro from './index.js'
+import { clockTime, formatDate } from '../index.js'
 
 const lat = 46.857
 const lon = -114.007

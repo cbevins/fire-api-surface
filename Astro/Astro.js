@@ -1,4 +1,4 @@
-import { ymdToJd } from './Calendar.js'
+import { ymdToJd } from '../index.js'
 
 // -----------------------------------------------------------------------------
 // Public API

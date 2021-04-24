@@ -1,4 +1,10 @@
-import { fosbergDead1h, fosbergDead10h, fosbergDead100h, fosbergReference, fosbergCorrection } from './FuelMoisture.js'
+import {
+  fosbergDead1h,
+  fosbergDead10h,
+  fosbergDead100h,
+  fosbergReference,
+  fosbergCorrection
+} from './index.js'
 
 const Obs = {
   db: 60,

@@ -59,7 +59,7 @@ export class DateTime {
 
   hour () { return this._hour }
 
-  isGregorian () { return isGregorian(this._year, this._month, this._day) }
+  isGregorian () { return Cal.isGregorian(this._year, this._month, this._day) }
 
   isLeapYear () { return Cal.isLeapYear(this._year) }
 

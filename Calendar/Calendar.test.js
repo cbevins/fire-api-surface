@@ -28,7 +28,7 @@ import {
   ymdToDoy,
   ymdToJd,
   ymdToMjd
-} from './Calendar.js'
+} from './index.js'
 
 test('1: ymdToJd() and jdToYmd()', () => {
   // Common cases are all convertable from Julian day number to year-month-day and back
