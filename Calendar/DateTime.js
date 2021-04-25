@@ -31,7 +31,7 @@ export class DateTime {
     return [this._hour, this._minute, this._second, this._millisecond]
   }
 
-  asYmdArray () {
+  asYmd () {
     return [this._year, this._month, this._day]
   }
 
@@ -97,7 +97,7 @@ export class DateTime {
     return this.update()
   }
 
-  setime (hour = 0, minute = 0, second = 0, millisecond = 0) {
+  setTime (hour = 0, minute = 0, second = 0, millisecond = 0) {
     this._hour = hour
     this._minute = minute
     this._second = second

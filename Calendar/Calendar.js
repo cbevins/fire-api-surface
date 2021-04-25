@@ -6,13 +6,19 @@ const DaysToMonth1582 = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 294, 324] 
 
 /**
  * Formats time as hh:mm:ss
- * @param {number} h Hours, either integer [0..23] or decimal hours
- * @param {number} m Minutes of the hours (if h not decimal hours)
+ * @param {number} h Hours, either integer [0..23] or decimal hours or Julian day number
+ * @param {number} m Minutes of the hours (if h not decimal hours or Julian day number)
  * @param {number} s Seconds of the minute
  * @returns {string} Time formatted as 24-h hh:mm:ss
  */
 export function clockTime (h, m, s) {
-  if (arguments.length === 1) [, h, m, s] = decimalHoursToDhms(h)
+  if (arguments.length === 1) { // h must be decimal hours, or Julian day
+    if (h > 24.5) { // must be a Julian day number, which begins at noon each day
+      [, h, m, s] = decimalDaysToDhms((h - Math.trunc(h))) // get decimal portion of Julian day
+    } else {
+      [, h, m, s] = decimalHoursToDhms(h)
+    }
+  }
   return `${int(h, 2)}:${int(m, 2)}:${int(s, 2)}`
 }
 
@@ -181,20 +187,28 @@ export function easterDay (year) {
  * @returns {string} Date formatted as yyy-mm-dd
  */
 export function formatDate (y, m, d) {
-  if (arguments.length === 1) [y, m, d] = jdToYmd(y)
+  if (arguments.length === 1) { // must be Julian day number
+    ;[y, m, d] = jdToYmd(y)
+  }
   return `${int(y, 4)}-${int(m, 2)}-${int(d, 2)}`
 }
 
 /**
  * Formats time as hh:mm:ss.uuu (see also clockTime())
- * @param {number} h Hours, either integer [0..23] or decimal hours
- * @param {number} m Minutes of the hours (if h not decimal hours)
+ * @param {number} h Hours, either integer [0..23] or decimal hours, or Julian day number
+ * @param {number} m Minutes of the hours (if h not decimal hours or Julian day)
  * @param {number} s Seconds of the minute
  * @param {number} ms Milleseconds
  * @returns {string} Time formatted as 24-h hh:mm:ss
  */
 export function formatTime (h, m, s, ms) {
-  if (arguments.length === 1) [, h, m, s, ms] = decimalHoursToDhms(h)
+  if (arguments.length === 1) { // h must be decimal hours, or Julian day
+    if (h > 24.5) { // must be a Julian day number, which begins at noon each day
+      [, h, m, s, ms] = decimalDaysToDhms((h - Math.trunc(h))) // get decimal portion of Julian day
+    } else {
+      [, h, m, s, ms] = decimalHoursToDhms(h)
+    }
+  }
   const str = `${int(h, 2)}:${int(m, 2)}:${int(s, 2)}`
   return (ms > 0) ? str + `.${int(ms, 3)}` : str
 }

@@ -209,6 +209,10 @@ test('8: ymdToDoy(), doyToYmd()', () => {
   expect(ymdToDoy(1978, 12, 31)).toEqual(365)
   expect(doyToYmd(1978, 365)).toEqual([1978, 12, 31])
 
+  expect(isLeapYear(1952)).toEqual(true)
+  expect(ymdToDoy(1952, 9, 4)).toEqual(248)
+  expect(doyToYmd(1952, 248)).toEqual([1952, 9, 4])
+
   // 1582 has no dates Oct 5-14, so 10 fewer than expected
   expect(ymdToDoy(1582, 12, 31)).toEqual(355)
   expect(doyToYmd(1582, 355)).toEqual([1582, 12, 31])
@@ -337,21 +341,64 @@ test('16: dhmsTo<Something>() default args', () => {
   expect(dhmsToMs(1)).toEqual(60 * 60 * 24 * 1000)
 })
 
-test('17: formatDate()', () => {
+test('17: clockTime(), formatTime()', () => {
+  expect(decimalHoursToDhms(0.5)).toEqual([0, 0, 30, 0, 0])
+  expect(decimalDaysToDhms(0.5)).toEqual([0, 12, 0, 0, 0])
+
   const jd = ymdToJd(1952, 9, 4)
-  expect(formatDate(jd)).toEqual('1952-09-04')
-  expect(formatDate(1952, 9, 4)).toEqual('1952-09-04')
-  expect(formatDate(52, 9, 4)).toEqual('0052-09-04')
-  expect(formatDate(1, 1, 1)).toEqual('0001-01-01')
-  expect(formatDate(0, 0, 0)).toEqual('0000-00-00')
+  expect(jd).toEqual(2434259.5)
+  expect(clockTime(jd)).toEqual('12:00:00')
+
+  let jt = ymdToJd(1952, 9, dhmsToDays(4, 0, 0, 0, 0)) // noon
+  expect(jt).toEqual(2434259.5)
+  expect(formatDate(jt)).toEqual('1952-09-04')
+  expect(clockTime(jt)).toEqual('12:00:00')
+
+  jt = ymdToJd(1952, 9, 4 - 0.25) // 06:00
+  expect(jt).toEqual(2434259.5 - 0.25)
+  expect(formatDate(jt)).toEqual('1952-09-04')
+  expect(clockTime(jt)).toEqual('06:00:00')
+
+  jt = ymdToJd(1952, 9, 4 + 0.25) // 18:00
+  expect(jt).toEqual(2434259.5 + 0.25)
+  expect(formatDate(jt)).toEqual('1952-09-04')
+  expect(clockTime(jt)).toEqual('18:00:00')
+
+  jt = ymdToJd(1952, 9, 4 + 0.75) // 06:00 next day
+  expect(jt).toEqual(2434259.5 + 0.75)
+  expect(formatDate(jt)).toEqual('1952-09-05')
+  expect(clockTime(jt)).toEqual('06:00:00')
+
+  // If using dhmsToDays(), must subtract the half-day
+  jt = ymdToJd(1952, 9, 4 + dhmsToDays(0, 23, 59, 59, 999) - 0.5)
+  expect(jt).toEqual(2434259.5 + 0.4999999884)
+  expect(clockTime(jt)).toEqual('23:59:59')
+
+  jt = ymdToJd(1952, 9, dhmsToDays(3, 47, 59, 59, 999) - 0.5)
+  expect(jt).toEqual(2434259.5 + 0.4999999884)
+  expect(clockTime(jt)).toEqual('23:59:59')
+
+  expect(formatTime(16.75)).toEqual('16:45:00')
+  expect(clockTime(16.75)).toEqual('16:45:00')
+  expect(formatTime(16.75833333)).toEqual('16:45:29.1000')
+  expect(clockTime(16.75833333)).toEqual('16:45:29')
 })
 
-test('18: clockTime(), formatTime()', () => {
-  expect(formatTime(0, 0, 0)).toEqual('00:00:00')
-  expect(formatTime(1, 1, 1)).toEqual('01:01:01')
-  expect(formatTime(4, 20, 30, 123)).toEqual('04:20:30.123')
+test('18: formatDate()', () => {
+  const jd = ymdToJd(1952, 9, 4)
+  expect(jd).toEqual(2434259.5)
 
-  expect(clockTime(0, 0, 0)).toEqual('00:00:00')
-  expect(clockTime(1, 1, 1)).toEqual('01:01:01')
-  expect(clockTime(4, 20, 30, 123)).toEqual('04:20:30')
+  // We get the correct calendar date for +/- 0.5 days
+  expect(formatDate(jd)).toEqual('1952-09-04')
+  expect(formatDate(jd - 0.5)).toEqual('1952-09-04')
+  expect(formatDate(jd + 0.49999)).toEqual('1952-09-04')
+  expect(formatDate(jd + 0.5)).toEqual('1952-09-05')
+  expect(clockTime(jd)).toEqual('12:00:00')
+  expect(formatTime(jd)).toEqual('12:00:00')
+
+  // But the jdToYmd() method discards fractional hours
+  const jt = ymdToJd(1952, 9, 4 + dhmsToDays(0, 18, 0, 0, 0))
+  expect(jt).toEqual(2434259.5 + 0.75)
+  expect(clockTime(jt)).toEqual('06:00:00')
+  expect(formatDate(jt)).toEqual('1952-09-05')
 })
