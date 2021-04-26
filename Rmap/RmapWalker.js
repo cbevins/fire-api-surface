@@ -1,7 +1,7 @@
 import { Rmap } from './index.js'
 
 function circleWalk (rounds) {
-  const rmap = new Rmap(8, 6)
+  const rmap = new Rmap(2, 16)
   const c = Math.trunc((rmap._dim ** (rmap._maxDepth)) / 2)
   let i = 0
   for (let r = 0; r < rounds; r++) {
@@ -11,8 +11,8 @@ function circleWalk (rounds) {
       }
     }
   }
-  console.log(i, ' iterations')
   console.log(rmap.tally())
+  console.log(i, ' iterations')
 }
 
 const start = Date.now()
