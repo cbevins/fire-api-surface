@@ -1,9 +1,5 @@
-
-// ------------------------------------------------------------------
-// Main
-
 import moment from 'moment'
-import * as Fm from './FuelMoisture.js'
+import { FuelMoisture as Fm } from '@cbevins/fire-behavior-simulator'
 import { SimpleSurfaceFire, SimpleSurfaceFireInput } from '../src/index.js'
 import { getWeather } from './tomorrow.js'
 
@@ -79,7 +75,7 @@ function weatherString (w) {
 }
 
 // getWeather() callback
-function process (wxArray) {
+function calculate (wxArray) {
   addFuelMoisture(wxArray)
   addFireBehavior(wxArray, input)
   let str = headerString(input) + '\n'
@@ -100,14 +96,35 @@ function fireForecast (lat, lon, startTime, endTime,
   input.wind.direction.headingFromUpslope = 0
   input.wind.speed.adj = waf
   input.time.sinceIgnition = 60
-  getWeather(lat, lon, startTime, endTime, process)
+  getWeather(lat, lon, startTime, endTime, calculate)
 }
 
 // ----------------------------------------------------------------
 
 // configure the time frame up to 6 hours back and 15 days out
 const now = moment.utc()
-// console.log(now)
-const startTime = moment.utc(now).startOf('hour').toISOString()
-const endTime = moment.utc(now).add(24, 'hours').toISOString()
-fireForecast(46.85722, -114.00723, startTime, endTime, 'gs4')
+const imap = new Map([
+  ['lat', 46.85714],
+  ['lon', -114.00730],
+  ['fuel', 'gs1'],
+  ['start', moment.utc(now).startOf('hour').toISOString()],
+  ['end', moment.utc(now).add(24, 'hours').toISOString()]
+])
+
+for (let a = 2; a < process.argv.length; a++) {
+  const part = process.argv[a].split('=')
+  if (part.length === 2) {
+    if (!imap.has(part[0])) throw new Error(`Invalid argument ${part[0]}`)
+    imap.set(part[0], part[1])
+  }
+}
+console.log(imap)
+// \TODO - validate args
+
+fireForecast(
+  imap.get('lat'),
+  imap.get('lon'),
+  imap.get('start'),
+  imap.get('end'),
+  imap.get('fuel')
+)
