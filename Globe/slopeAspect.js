@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
 /**
- * Calculates and aspect using the third order finite difference technique shown by
+ * Calculates slope and aspect using the third order finite difference technique shown by
  * https://desktop.arcgis.com/en/arcmap/10.3/tools/spatial-analyst-toolbox/how-aspect-works.htm
- * which references
+ * which references:
  * Burrough, P. A., and McDonell, R. A., 1998. Principles of Geographical Information Systems
  * (Oxford University Press, New York), 190 pp.
  *
@@ -10,6 +10,7 @@
  * z1 z2 z3
  * z4 z0 z5
  * z6 z7 z8
+ * NOTE that e[0] is the CENTER cell
  * Thus, the 3 x 3 elevation grid:
  *  1 2 3
  *  4 5 6
