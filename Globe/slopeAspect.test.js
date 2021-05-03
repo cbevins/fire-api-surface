@@ -1,6 +1,5 @@
-import { aspect, slope, slopeAspect } from './slopeAspect.js'
-
 /* eslint-disable camelcase */
+import { aspect, slope, slopeAspect } from './slopeAspect.js'
 
 // arcGis slope example
 // | 50 45 50| dz_dx = ((50 + 60 + 10) - (50 + 60 + 8)) / (8 * 5) = (120 - 118) / 40 = 0.05
