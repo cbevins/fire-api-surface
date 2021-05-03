@@ -22,7 +22,7 @@ let dmsSeparator = '\u202f' // U+202F = 'narrow no-break space'
 /**
  * Functions for parsing and representing degrees / minutes / seconds.
  */
-class Dms {
+export class Dms {
   // note Unicode Degree = U+00B0. Prime = U+2032, Double prime = U+2033
 
   /**
