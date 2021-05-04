@@ -1,8 +1,7 @@
 // Gets elevation, slope, and aspect using MapQuest Elevation API
-import { elevSlopeAspect as mapQuest } from './elevQuert-mapquest.js'
+import { elevSlopeAspect as mapQuest } from './elevQuery-mapquest.js'
 import { elevSlopeAspect as usgs } from './elevQuery-usgs.js'
 import { Dms } from './dms.js'
-import { promisify } from 'util'
 
 function fmt (v) { return v.toFixed(2).padStart(7, ' ') }
 
