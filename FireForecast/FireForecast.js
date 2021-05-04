@@ -1,39 +1,51 @@
 import moment from 'moment'
 import { FuelMoisture as Fm } from '@cbevins/fire-behavior-simulator'
-import { SimpleSurfaceFire, SimpleSurfaceFireInput } from '../src/index.js'
 import { getWeather } from './tomorrow.js'
+import { fireBehavior } from './fireBehavior.js'
 
-// Set up the fire api
-const surface = new SimpleSurfaceFire()
-const input = { ...SimpleSurfaceFireInput }
-let output = surface.run(input)
+// \TODO
+// - Use built-in Fosberg
+// - use elevation service
 
-function addFireBehavior (wxArray, input) {
+// Adds fire behavior to the weather records
+function addFireBehavior (wxArray, parms) {
   wxArray.forEach(wx => {
-    input.weather = wx
-    input.moisture.dead.tl1h = 100 * wx.fosbergDead1h
-    input.moisture.dead.tl10h = 100 * wx.fosbergDead10h
-    input.moisture.dead.tl100h = 100 * wx.fosbergDead100h
-    input.temperature.air = wx.temperature
-    input.wind.speed.at20ft = 60 * wx.windSpeed / 88 // from ft/s to ft/min
-    input.wind.speed.atMidflame = input.wind.speed.adj * input.wind.speed.at20ft
-    output = surface.run(input)
-    wx.spreadRate = output.ellipse.heading.spreadRate
-    wx.flameLength = output.ellipse.heading.flameLength
-    wx.scorchHeight = output.ellipse.heading.scorchHeight
+    const input = {
+      fuel: parms.fuel,
+      curedHerb: parms.cured,
+      tl1h: 0.01 * wx.fosbergDead1h,
+      tl10h: 0.01 * wx.fosbergDead10h,
+      tl100h: 0.01 * wx.fosbergDead100h,
+      liveMoisture: 0.01 * parms.live,
+      windAt10m: wx.windSpeed,
+      windAdj: parms.waf,
+      aspect: parms.aspect,
+      slope: 0.01 * parms.slope,
+      windFrom: wx.windFrom,
+      dryBulb: wx.dryBulb,
+      elapsed: 60
+    }
+    // console.log('INPUT', input)
+    const output = fireBehavior(input)
+    // console.log('OUTPUT', output)
+    wx.spreadRate = output.heading.spreadRate
+    wx.flameLength = output.heading.flameLength
+    wx.scorchHeight = output.heading.scorchHeight
   })
   return wxArray
 }
 
-function addFuelMoisture (wxArray) {
+// Adds the 5 Fosberg fuel moisture values to each weather record
+function addFuelMoisture (wxArray, parms) {
   wxArray.forEach(w => {
     const month = +(w.date).substr(5, 2)
     const hour = +(w.time).substr(0, 2)
     const shading = 0.01 * w.cloudCover
-    const aspect = input.slope.direction.aspect
-    const slope = input.slope.steepness.ratio
+    const aspect = parms.aspect
+    const slope = parms.slope // %
     const elevDiff = 0
-    w.fosbergDead1hRef = 100 * Fm.fosbergReference(w.temperature, 0.01 * w.humidity)
+    // These require humidity, slope, shading as ratios and returns moisture as ratio
+    w.fosbergDead1hRef = 100 * Fm.fosbergReference(w.dryBulb, 0.01 * w.humidity)
     w.fosbergDead1hAdj = 100 * Fm.fosbergCorrection(month, shading, aspect, slope, hour, elevDiff)
     w.fosbergDead1h = 100 * Fm.fosbergDead1h(0.01 * w.fosbergDead1hRef, 0.01 * w.fosbergDead1hAdj)
     w.fosbergDead10h = 100 * Fm.fosbergDead10h(0.01 * w.fosbergDead1h)
@@ -44,23 +56,23 @@ function addFuelMoisture (wxArray) {
 
 function fix (v, w, d, c = ' ') { return v.toFixed(d).padStart(w, c) }
 
-function headerString (input) {
-  let str = `\nForecast for Fuel Model='${input.fuel.model}', `
-  str += `Herb=${fix(100 * input.moisture.live.herb, 1, 0)}% `
-  str += `Stem=${fix(100 * input.moisture.live.stem, 1, 0)}% `
-  str += `WAF=${input.wind.speed.adj}\n`
-  str += 'Date       Time  |  Db  Rh | Wind f/s  |  CC Solar | Dead Fuel Moisture |    RoS  Flame Scorch |\n'
-  str += 'Year-Mo-Dy Hr:Mn |  oF   % | Sp Gs Dir |   % Solar | 1h ( R+C) 10h 100h | ft/min     ft     ft |'
+function headerString (parms) {
+  let str = `\nForecast for Fuel Model='${parms.fuel}', `
+  str += `Live Mois=${fix(parms.live, 1, 0)}% `
+  str += `WAF=${parms.waf}\n`
+  str += '| Date       Time  |  Db  Rh | Wind f/s  | Cld Solar | Dead Fuel Moisture | Spread  Flame Scorch |\n'
+  str += '| Year-Mo-Dy Hr:Mn |  oF   % | Sp Gs Dir | Cvr Solar | 1h ( R+C) 10h 100h | ft/min     ft     ft |\n'
+  str += '|------------------|---------|-----------|-----------|--------------------|----------------------|\n'
   return str
 }
 
 function weatherString (w) {
-  let str = `${w.date} ${w.time} | `
-  str += `${fix(w.temperature, 3, 0)} `
+  let str = `| ${w.date} ${w.time} | `
+  str += `${fix(w.dryBulb, 3, 0)} `
   str += `${fix(w.humidity, 3, 0)} | `
   str += `${fix(w.windSpeed, 2, 0)} `
   str += `${fix(w.windGust, 2, 0)} `
-  str += `${fix(w.windDirection, 3, 0)} | `
+  str += `${fix(w.windFrom, 3, 0)} | `
   str += `${fix(w.cloudCover, 3, 0)} `
   str += `${fix(w.solarGHI, 5, 0)} | `
   str += `${fix(w.fosbergDead1h, 2, 0)} (`
@@ -75,56 +87,54 @@ function weatherString (w) {
 }
 
 // getWeather() callback
-function calculate (wxArray) {
-  addFuelMoisture(wxArray)
-  addFireBehavior(wxArray, input)
-  let str = headerString(input) + '\n'
+function calculate (wxArray, parms) {
+  addFuelMoisture(wxArray, parms)
+  addFireBehavior(wxArray, parms)
+  let str = headerString(parms) + '\n'
   wxArray.forEach(wx => {
     str += weatherString(wx) + '\n'
   })
   console.log(str)
-}
-
-function fireForecast (lat, lon, startTime, endTime,
-  model = 'gs1', waf = 0.4, herb = 1, stem = 2, slope = 0.2, aspect = 180) {
-  input.location = { lat: lat, lon: lon }
-  input.fuel.model = model
-  input.moisture.live.herb = herb
-  input.moisture.live.stem = stem
-  input.slope.direction = { aspect: aspect }
-  input.slope.steepness.ratio = slope
-  input.wind.direction.headingFromUpslope = 0
-  input.wind.speed.adj = waf
-  input.time.sinceIgnition = 60
-  getWeather(lat, lon, startTime, endTime, calculate)
+  return str
 }
 
 // ----------------------------------------------------------------
+// Main CLI
+// ----------------------------------------------------------------
 
+// Define the command line parameters and their defaults
 // configure the time frame up to 6 hours back and 15 days out
 const now = moment.utc()
-const imap = new Map([
-  ['lat', 46.85714],
-  ['lon', -114.00730],
-  ['fuel', 'gs1'],
-  ['start', moment.utc(now).startOf('hour').toISOString()],
-  ['end', moment.utc(now).add(24, 'hours').toISOString()]
-])
+const parms = {
+  // weather service parameters
+  lat: 46.85714,
+  lon: -114.00730,
+  start: moment.utc(now).startOf('hour').toISOString(), // "2019-03-20T14:09:50Z"
+  end: moment.utc(now).add(1, 'hours').toISOString(),
+  // Timezone of time values, according to IANA Timezone Names (defaults to 'UTC')
+  // https://docs.tomorrow.io/reference/api-formats#timezone
+  timezone: 'America/Denver',
+  // elevation service parameters
+  slope: 20, // slope steepness (%)
+  aspect: 180, // aspect
+  // fire behavior parameters
+  fuel: 'gs1',
+  waf: 0.4,
+  cured: 0, // herb cured fraction (%)
+  live: 200 // live herb and stem fuel moisture (%)
+}
 
+// Process any actual command line parameters
 for (let a = 2; a < process.argv.length; a++) {
   const part = process.argv[a].split('=')
   if (part.length === 2) {
-    if (!imap.has(part[0])) throw new Error(`Invalid argument ${part[0]}`)
-    imap.set(part[0], part[1])
+    if (!Object.prototype.hasOwnProperty.call(parms, part[0])) {
+      throw new Error(`Invalid argument ${part[0]}`)
+    }
+    parms.set(part[0], part[1])
   }
 }
-console.log(imap)
-// \TODO - validate args
-
-fireForecast(
-  imap.get('lat'),
-  imap.get('lon'),
-  imap.get('start'),
-  imap.get('end'),
-  imap.get('fuel')
-)
+// console.log(imap)
+// \TODO - validate command line args
+getWeather(parms.lat, parms.lon, parms.start, parms.end, parms.timezone)
+  .then(result => { calculate(result, parms) })
