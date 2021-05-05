@@ -8,7 +8,7 @@ function fmt (v) { return v.toFixed(2).padStart(7, ' ') }
 // Dumps elevation data
 export function show (service, name, data) {
   const z = data.cells.map(cell => cell.elev)
-  const r = (100 * Math.tan(data.slopeDeg * Math.PI / 180)).toFixed(0)
+  const r = (100 * data.slopeRatio).toFixed(0)
   let str = `${service}: ----------------------------------\n`
   str += `${name}\n`
   str += `  φ lat:     ${data.lat}\u00B0\n`

@@ -12,7 +12,7 @@ import { mapQuestKey } from './apiKeys.js'
  * @param {number} lon  Center cell longitude east (+) or west (-)
  * @param {number} sampleRes Sample resolution in decimal degrees (usually 1/3 arc-second)
  * @param {number} cellWidth Cell width (and height) in sampleRes units
- * @returns {object} {lat, lon, elev, slopeDeg, aspect, cells, nsMeters, ewMeters, nsDegrees, ewDegrees}
+ * @returns {object} {lat, lon, elev, slopeDeg, slopeRatio, aspect, cells, nsMeters, ewMeters, nsDegrees, ewDegrees}
  */
 export const elevSlopeAspect = async (lat0, lon0, sampleRes, cellWidth) => {
   const url = 'http://open.mapquestapi.com/elevation/v1/profile'
@@ -42,6 +42,7 @@ export const elevSlopeAspect = async (lat0, lon0, sampleRes, cellWidth) => {
   loc.lon = lon0
   loc.elev = elevationGrid[4]
   loc.slopeDeg = slope
+  loc.slopeRatio = Math.tan(slope * Math.PI / 180)
   loc.aspect = aspect
   return loc
 }
