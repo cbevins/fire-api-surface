@@ -10,7 +10,7 @@
  */
 import moment from 'moment'
 import { FuelMoisture as Fm } from '@cbevins/fire-behavior-simulator'
-import { elevSlopeAspect as mapQuest } from '../Globe/elevQuery-mapquest.js'
+import { mapquestElevSlopeAspect as mapQuest } from '../Globe/elevQuery-mapquest.js'
 import { fireBehavior } from './fireBehavior.js'
 import { getTimelines as getTomorrow } from './wxQuery-tomorrow.js'
 import { getForecast as getWeatherapi } from './wxQuery-weatherapi.js'
