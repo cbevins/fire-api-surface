@@ -14,7 +14,7 @@
  *       |- localMeanSiderealTime() [e-, w+] per M&P
  *
  */
-import { ymdToJd } from '../index.js'
+import { ymdToJd } from '../Calendar/Calendar.js'
 
 // -----------------------------------------------------------------------------
 // Public API

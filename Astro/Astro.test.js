@@ -1,7 +1,7 @@
-import * as Astro from './index.js'
-import { clockTime, formatDate } from '../index.js'
-import { sunPosition } from './index.js'
-import { ymdToJd } from '../Calendar/Calendar.js'
+import * as Astro from './Astro.js'
+import { clockTime, formatDate } from '../Calendar/Calendar.js'
+// import { sunPosition } from './index.js'
+// import { ymdToJd } from '../Calendar/Calendar.js'
 
 const lat = 46.85714
 const lon = -114.00730
