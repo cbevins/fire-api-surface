@@ -10,6 +10,7 @@
  */
 import moment from 'moment'
 import { FuelMoisture as Fm } from '@cbevins/fire-behavior-simulator'
+import { elevSlopeAspect as mapQuest } from '../Globe/elevQuery-mapquest.js'
 import { fireBehavior } from './fireBehavior.js'
 import { getTimelines as getTomorrow } from './wxQuery-tomorrow.js'
 import { getForecast as getWeatherapi } from './wxQuery-weatherapi.js'
@@ -24,7 +25,7 @@ function addFireBehavior (wxArray, parms) {
   wxArray.forEach(wx => {
     const input = {
       fuel: parms.fuel,
-      curedHerb: parms.cured,
+      curedHerb: 0.01 * parms.cured,
       tl1h: 0.01 * wx.fosbergDead1h,
       tl10h: 0.01 * wx.fosbergDead10h,
       tl100h: 0.01 * wx.fosbergDead100h,
@@ -64,13 +65,20 @@ function addFuelMoisture (wxArray, parms) {
   return wxArray
 }
 
-function fix (v, w, d, c = ' ') { return v.toFixed(d).padStart(w, c) }
+function fix (v, w, d, c = ' ') {
+  return (typeof v === 'string') ? v.padStart(w, c) : v.toFixed(d).padStart(w, c)
+}
 
 // Returns the forecast header
 function forecastHeader (parms) {
-  let str = `\nFire Forecast for Fuel Model='${parms.fuel}', `
-  str += `Live Mois=${fix(parms.live, 1, 0)}% `
-  str += `WAF=${parms.waf}\n`
+  let str = `\nFire Forecast for '${parms.name}' at lat ${parms.lat}, lon ${parms.lon}:\n`
+  str += `  Elev:       ${fix(parms.elev, 4, 0)} ft\n`
+  str += `  Slope:      ${fix(parms.slope, 4, 0)} %\n`
+  str += `  Aspect:     ${fix(parms.aspect, 4, 0)} degrees\n`
+  str += `  Fuel Model: ${fix(parms.fuel, 4)}\n`
+  str += `  Cured Herb: ${fix(parms.cured, 4, 2)} %\n`
+  str += `  Live Moist: ${fix(parms.live, 4, 0)} %\n`
+  str += `  Wind Adj:   ${fix(parms.waf, 4, 2)}\n`
   str += '| Date       Time  |  Db  Rh | Wind f/s  | Cld | Dead Fuel Moisture | Spread  Flame Scorch |\n'
   str += '| Year-Mo-Dy Hr:Mn |  oF   % | Sp Gs Dir | Cvr | 1h ( R+C) 10h 100h | ft/min     ft     ft |\n'
   str += '|------------------|---------|-----------|-----|--------------------|----------------------|'
@@ -110,17 +118,35 @@ function showForecast (wxArray, parms) {
   return str
 }
 
+async function fireForecast (parms) {
+  // First get elevation, slope aspect
+  const sampleRes = 1 / (60 * 60 * 3) // 1/3 arc-second in decimal degrees
+  const cellWidth = 2 // Double sample distance to ensure adjacent cells have different sample
+  const esa = await mapQuest(parms.lat, parms.lon, sampleRes, cellWidth)
+  parms.elev = esa.elev
+  parms.slope = 100 * esa.slopeRatio
+  parms.aspect = esa.aspect
+
+  // getTomorrow(parms.lat, parms.lon, parms.start, parms.end, parms.timezone)
+  //   .then(result => { showForecast(result, parms) })
+  const wx = await getWeatherapi(parms.lat, parms.lon, 1, 'fire')
+  showForecast(wx, parms)
+}
+
 // ----------------------------------------------------------------
 // Main CLI
 // ----------------------------------------------------------------
-
+const M = { name: 'The "M"', lat: 46.859340, lon: -113.975528 }
+const Home = { name: 'Home', lat: 46.85714, lon: -114.00730 }
+const loc = M
 // Define the command line parameters and their defaults
 // configure the time frame up to 6 hours back and 15 days out
 const now = moment.utc()
 const parms = {
+  name: loc.name,
   // weather service parameters
-  lat: 46.85714,
-  lon: -114.00730,
+  lat: loc.lat,
+  lon: loc.lon,
   start: moment.utc(now).startOf('hour').toISOString(), // "2019-03-20T14:09:50Z"
   end: moment.utc(now).add(24, 'hours').toISOString(),
   // Timezone of time values, according to IANA Timezone Names (defaults to 'UTC')
@@ -147,10 +173,5 @@ for (let a = 2; a < process.argv.length; a++) {
   }
 }
 // \TODO - validate command line args
-
-// getTomorrow(parms.lat, parms.lon, parms.start, parms.end, parms.timezone)
-//   .then(result => { showForecast(result, parms) })
-
-getWeatherapi(parms.lat, parms.lon, 1, 'fire')
-  .then(result => { showForecast(result, parms) })
-console.log('DONE--------------------------')
+fireForecast(parms)
+console.log('Getting elevation and weather data ...')
