@@ -1,8 +1,10 @@
 import * as Astro from './index.js'
 import { clockTime, formatDate } from '../index.js'
+import { sunPosition } from './index.js'
+import { ymdToJd } from '../Calendar/Calendar.js'
 
-const lat = 46.857
-const lon = -114.007
+const lat = 46.85714
+const lon = -114.00730
 const gmt = -6
 const year = 2021
 const month = 4
@@ -33,9 +35,9 @@ test('2: moon()', () => {
 test('3: civil()', () => {
   const e = Astro.civil(lat, lon, gmt, year, month, day)
   expect(e.rise.occurs).toEqual(true)
-  expect(e.rise.time).toBeCloseTo(6.011613, 5)
+  expect(e.rise.time).toBeCloseTo(6.011626, 5)
   expect(e.set.occurs).toEqual(true)
-  expect(e.set.time).toBeCloseTo(21.150124, 5)
+  expect(e.set.time).toBeCloseTo(21.150151, 5)
   expect(e.visible.always).toEqual(false)
   expect(e.visible.diurnal).toEqual(true)
   expect(e.visible.never).toEqual(false)
@@ -44,9 +46,9 @@ test('3: civil()', () => {
 test('4: nautical()', () => {
   const e = Astro.nautical(lat, lon, gmt, year, month, day)
   expect(e.rise.occurs).toEqual(true)
-  expect(e.rise.time).toBeCloseTo(5.341886, 5)
+  expect(e.rise.time).toBeCloseTo(5.341886, 4)
   expect(e.set.occurs).toEqual(true)
-  expect(e.set.time).toBeCloseTo(21.829089)
+  expect(e.set.time).toBeCloseTo(21.829089, 4)
   expect(e.visible.always).toEqual(false)
   expect(e.visible.diurnal).toEqual(true)
   expect(e.visible.never).toEqual(false)
@@ -55,12 +57,29 @@ test('4: nautical()', () => {
 test('5: astronomical()', () => {
   const e = Astro.astronomical(lat, lon, gmt, year, month, day)
   expect(e.rise.occurs).toEqual(true)
-  expect(e.rise.time).toBeCloseTo(4.588409, 5)
+  expect(e.rise.time).toBeCloseTo(4.588416, 5)
   expect(e.set.occurs).toEqual(true)
   expect(e.set.time).toBeCloseTo(22.575165)
   expect(e.visible.always).toEqual(false)
   expect(e.visible.diurnal).toEqual(true)
   expect(e.visible.never).toEqual(false)
+})
+
+// https://www.sunearthtools.com/dp/tools/pos_sun.php
+test('6: sun() at home on 4/26/2021 tested against sunearthtools.com', () => {
+  const sun = Astro.sun(lat, lon, -7, 2021, 4, 26)
+  expect(sun.rise.occurs).toEqual(true)
+  expect(sun.rise.time).toBeCloseTo(5 + (28 / 60) + (20 / 3600), 2)
+  expect(sun.set.occurs).toEqual(true)
+  expect(sun.set.time).toBeCloseTo(19 + (40 / 60) + (4 / 3600), 2)
+  expect(sun.visible.always).toEqual(false)
+  expect(sun.visible.diurnal).toEqual(true)
+  expect(sun.visible.never).toEqual(false)
+
+  // const jd = ymdToJd(2021, 4, 26) // noon
+  // const [alt, ra] = sunPosition(jd, lat, lon, -7)
+  // expect(alt).toBeCloseTo(51 + (53 / 60), 1)
+  // expect(ra).toBeCloseTo(141 + (6 / 60), 1)
 })
 
 function fmt (n, e) {
