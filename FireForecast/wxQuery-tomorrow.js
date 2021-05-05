@@ -1,5 +1,6 @@
 /**
  * tomorrow.io weather api
+ * See FireForecast for usage.
  */
 import fetch from 'node-fetch'
 import { tomorrow } from './apiKeys.js'
@@ -17,7 +18,7 @@ import queryString from 'query-string'
  * anything else returns raw tomorrow.io response
  * @returns {array} Array of hourly weather records dictated by the *format* arg.
  */
-export const getWeather = async (lat, lon, startTime, endTime, timezone = 'UTC', format = 'fire') => {
+export const getTimelines = async (lat, lon, startTime, endTime, timezone = 'UTC', format = 'fire') => {
   // set the Timelines GET endpoint as the target URL
   const url = tomorrow.url // 'https://api.tomorrow.io/v4/timelines'
   const apikey = tomorrow.apiKey // get your key from app.tomorrow.io/development/keys
@@ -109,10 +110,10 @@ function asFireWeather (json) {
       cloudCover: wx.cloudCover, // %
       visibility: wx.visibility, // mi
       wthrCode: wx.weatherCode, // code
-      // Items below here are unique to this service
-      precipType: wx.precipitationType, // 0=N/A 1=Rain 2=Snow 3=Freezing Rain 4=Ice Pellets
       feelsLike: wx.temperatureApparent, // apparent temperature at 2-m (oF)
       atmSurface: wx.pressureSurfaceLevel, // weight of the air above the surface (at the surface level) (in/Hg)
+      // Items below here are unique to this service
+      precipType: wx.precipitationType, // 0=N/A 1=Rain 2=Snow 3=Freezing Rain 4=Ice Pellets
       atmSea: wx.pressureSeaLevel, // weight of the air above the surface (at mean sea level) (in/Hg)
       cloudBase: wx.cloudBase, // mi
       cloudCeil: wx.cloudCeiling, // mi

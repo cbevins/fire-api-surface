@@ -78,7 +78,6 @@ export function fireBehavior (inp) {
   // requiredInputs.forEach(node => { console.log(node.key()) })
 
   // Step 6 - specify the values of the required inputs and run()
-  console.log(inp)
   dag.input([
     ['surface.primary.fuel.model.catalogKey', [inp.fuel]],
     ['surface.primary.fuel.model.behave.parms.cured.herb.fraction', [inp.curedHerb]], // fraction

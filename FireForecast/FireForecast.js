@@ -1,7 +1,18 @@
+/**
+ * FireForecast.js
+ *
+ * Useage: node FireForecast.js
+ *
+ * Produces an hourly weather and fire forecast using weather forecast data from
+ * two alternate sources:
+ * - tomorrow.oi
+ * - weatherapi.com
+ */
 import moment from 'moment'
 import { FuelMoisture as Fm } from '@cbevins/fire-behavior-simulator'
-import { getWeather } from './tomorrow.js'
 import { fireBehavior } from './fireBehavior.js'
+import { getTimelines as getTomorrow } from './wxQuery-tomorrow.js'
+import { getForecast as getWeatherapi } from './wxQuery-weatherapi.js'
 
 // \TODO
 // - Use built-in Fosberg
@@ -9,6 +20,7 @@ import { fireBehavior } from './fireBehavior.js'
 
 // Adds fire behavior to the weather records
 function addFireBehavior (wxArray, parms) {
+  addFuelMoisture(wxArray, parms)
   wxArray.forEach(wx => {
     const input = {
       fuel: parms.fuel,
@@ -25,9 +37,7 @@ function addFireBehavior (wxArray, parms) {
       dryBulb: wx.dryBulb,
       elapsed: 60
     }
-    // console.log('INPUT', input)
     const output = fireBehavior(input)
-    // console.log('OUTPUT', output)
     wx.spreadRate = output.heading.spreadRate
     wx.flameLength = output.heading.flameLength
     wx.scorchHeight = output.heading.scorchHeight
@@ -56,43 +66,45 @@ function addFuelMoisture (wxArray, parms) {
 
 function fix (v, w, d, c = ' ') { return v.toFixed(d).padStart(w, c) }
 
-function headerString (parms) {
-  let str = `\nForecast for Fuel Model='${parms.fuel}', `
+// Returns the forecast header
+function forecastHeader (parms) {
+  let str = `\nFire Forecast for Fuel Model='${parms.fuel}', `
   str += `Live Mois=${fix(parms.live, 1, 0)}% `
   str += `WAF=${parms.waf}\n`
-  str += '| Date       Time  |  Db  Rh | Wind f/s  | Cld Solar | Dead Fuel Moisture | Spread  Flame Scorch |\n'
-  str += '| Year-Mo-Dy Hr:Mn |  oF   % | Sp Gs Dir | Cvr Solar | 1h ( R+C) 10h 100h | ft/min     ft     ft |\n'
-  str += '|------------------|---------|-----------|-----------|--------------------|----------------------|\n'
+  str += '| Date       Time  |  Db  Rh | Wind f/s  | Cld | Dead Fuel Moisture | Spread  Flame Scorch |\n'
+  str += '| Year-Mo-Dy Hr:Mn |  oF   % | Sp Gs Dir | Cvr | 1h ( R+C) 10h 100h | ft/min     ft     ft |\n'
+  str += '|------------------|---------|-----------|-----|--------------------|----------------------|'
   return str
 }
 
-function weatherString (w) {
+// Formats and returns a single hourly weather & fire forecast row
+function forecastRow (w) {
   let str = `| ${w.date} ${w.time} | `
   str += `${fix(w.dryBulb, 3, 0)} `
   str += `${fix(w.humidity, 3, 0)} | `
   str += `${fix(w.windSpeed, 2, 0)} `
   str += `${fix(w.windGust, 2, 0)} `
   str += `${fix(w.windFrom, 3, 0)} | `
-  str += `${fix(w.cloudCover, 3, 0)} `
-  str += `${fix(w.solarGHI, 5, 0)} | `
+  str += `${fix(w.cloudCover, 3, 0)} | `
+  // str += `${fix(w.solarGHI, 5, 0)} | `
   str += `${fix(w.fosbergDead1h, 2, 0)} (`
   str += `${fix(w.fosbergDead1hRef, 2, 0)}+`
   str += `${fix(w.fosbergDead1hAdj, 1, 0)}) `
   str += `${fix(w.fosbergDead10h, 3, 0)} `
   str += `${fix(w.fosbergDead100h, 3, 0)}  | `
-  str += `${fix(w.spreadRate, 6, 0)} `
-  str += `${fix(w.flameLength, 6, 0)} `
-  str += `${fix(w.scorchHeight, 6, 0)} |`
+  str += `${fix(w.spreadRate, 6, 2)} `
+  str += `${fix(w.flameLength, 6, 2)} `
+  str += `${fix(w.scorchHeight, 6, 2)} |`
   return str
 }
 
-// getWeather() callback
-function calculate (wxArray, parms) {
-  addFuelMoisture(wxArray, parms)
+// Adds fuel moisture and fire behavior to forecast, then displays it
+function showForecast (wxArray, parms) {
   addFireBehavior(wxArray, parms)
-  let str = headerString(parms) + '\n'
+  // console.log(wxArray)
+  let str = forecastHeader(parms) + '\n'
   wxArray.forEach(wx => {
-    str += weatherString(wx) + '\n'
+    str += forecastRow(wx) + '\n'
   })
   console.log(str)
   return str
@@ -110,7 +122,7 @@ const parms = {
   lat: 46.85714,
   lon: -114.00730,
   start: moment.utc(now).startOf('hour').toISOString(), // "2019-03-20T14:09:50Z"
-  end: moment.utc(now).add(1, 'hours').toISOString(),
+  end: moment.utc(now).add(24, 'hours').toISOString(),
   // Timezone of time values, according to IANA Timezone Names (defaults to 'UTC')
   // https://docs.tomorrow.io/reference/api-formats#timezone
   timezone: 'America/Denver',
@@ -134,7 +146,11 @@ for (let a = 2; a < process.argv.length; a++) {
     parms.set(part[0], part[1])
   }
 }
-// console.log(imap)
 // \TODO - validate command line args
-getWeather(parms.lat, parms.lon, parms.start, parms.end, parms.timezone)
-  .then(result => { calculate(result, parms) })
+
+// getTomorrow(parms.lat, parms.lon, parms.start, parms.end, parms.timezone)
+//   .then(result => { showForecast(result, parms) })
+
+getWeatherapi(parms.lat, parms.lon, 1, 'fire')
+  .then(result => { showForecast(result, parms) })
+console.log('DONE--------------------------')
