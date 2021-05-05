@@ -14,7 +14,7 @@ import { mapQuestKey } from './apiKeys.js'
  * @param {number} cellWidth Cell width (and height) in sampleRes units
  * @returns {object} {lat, lon, elev, slopeDeg, slopeRatio, aspect, cells, nsMeters, ewMeters, nsDegrees, ewDegrees}
  */
-export const elevSlopeAspect = async (lat0, lon0, sampleRes, cellWidth) => {
+export const mapquestElevSlopeAspect = async (lat0, lon0, sampleRes, cellWidth) => {
   const url = 'http://open.mapquestapi.com/elevation/v1/profile'
   const parms = `?key=${mapQuestKey}&shapeFormat=raw&unit=f&`
 

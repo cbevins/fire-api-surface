@@ -13,7 +13,7 @@ import { locationGrid, slopeAspect } from './slopeAspect.js'
  * @param {number} cellWidth Cell width (and height) in sampleRes units
  * @returns {object} {lat, lon, elev, slopeDeg, slopeRatio, aspect, cells, nsMeters, ewMeters, nsDegrees, ewDegrees}
  */
-export const elevSlopeAspect = async (lat0, lon0, sampleRes, cellWidth) => {
+export const usgsElevSlopeAspect = async (lat0, lon0, sampleRes, cellWidth) => {
   const url = 'https://nationalmap.gov/epqs/pqs.php?units=Feet&output=json&'
   const loc = locationGrid(lat0, lon0, sampleRes, cellWidth)
 
