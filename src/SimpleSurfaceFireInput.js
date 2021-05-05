@@ -30,6 +30,7 @@ export const SimpleSurfaceFireInput = {
       headingFromUpslope: 0 // compass degrees clockwise from upslope direction
     },
     speed: {
+      adj: 0.4,
       atMidflame: 10 // wind speed at midflame height (mi/h)
     }
   },
