@@ -3,8 +3,8 @@
  *
  * Useage: node FireForecast.js
  *
- * Produces an hourly weather and fire forecast using weather forecast data from
- * two alternate sources:
+ * Produces an hourly weather and fire forecast table
+ * using world-wide weather forecast data from two alternate sources:
  * - tomorrow.oi
  * - weatherapi.com
  */
@@ -12,11 +12,7 @@ import moment from 'moment'
 import { mapquestElevSlopeAspect as mapQuest } from '../Globe/elevQuery-mapquest.js'
 import { FireBehavior } from './fireBehavior.js'
 import { getTimelines as getTomorrow } from './wxQuery-tomorrow.js'
-import { getForecast as getWeatherapi } from './wxQuery-weatherapi.js'
-
-// \TODO
-// - Use built-in Fosberg
-// - use elevation service
+// import { getForecast as getWeatherapi } from './wxQuery-weatherapi.js'
 
 // Adds fire behavior to the weather records
 function addFireBehavior (parms, wxArray) {
@@ -47,6 +43,12 @@ function addFireBehavior (parms, wxArray) {
     wx.flameLength = output.heading.flameLength // ft
     wx.scorchHeight = output.heading.scorchHeight // ft
     wx.headingFromNorth = output.fire.headingFromNorth // degrees
+    wx.gust = {
+      spreadRate: output.heading.gust.spreadRate, // ft/min
+      flameLength: output.heading.gust.flameLength, // ft
+      scorchHeight: output.heading.gust.scorchHeight, // ft
+      headingFromNorth: output.fire.gust.headingFromNorth // degrees
+    }
   })
   return wxArray
 }
@@ -57,19 +59,22 @@ function fix (v, w, d, c = ' ') {
 
 // Returns the forecast table string
 function getForecastTable (parms, wxArray) {
+  const h0 = '|-------|---------|-----------|-----|-------------|---------------------------|---------------------------|\n'
+  const h1 = '|  Time |  Db  Rh | Wind mph  | Cld |  Dead Fuel  | Spread  Flame Scorch Head | Spread  Flame Scorch Head |\n'
+  const h2 = '|       |  oF   % | Sp Gs Dir | Cvr | 1h 10h 100h | ft/min     ft     ft  No  |      During Wind Gusts    |\n'
+
   let str = `\nFire Forecast for '${parms.name}' at lat ${parms.lat}, lon ${parms.lon}:\n`
-  str += `  Elev:       ${fix(parms.elev, 4, 0)} ft\n`
-  str += `  Slope:      ${fix(parms.slope, 4, 0)} %\n`
-  str += `  Aspect:     ${fix(parms.aspect, 4, 0)} degrees\n`
-  str += `  Fuel Model: ${fix(parms.fuel, 4)}\n`
-  str += `  Cured Herb: ${fix(parms.cured, 4, 2)} %\n`
-  str += `  Live Moist: ${fix(parms.live, 4, 0)} %\n`
-  str += `  Wind Adj:   ${fix(parms.waf, 4, 2)}\n`
-  str += '| Date       Time  |  Db  Rh | Wind mph  | Cld |  Dead Fuel  | Spread  Flame Scorch Head |\n'
-  str += '| Year-Mo-Dy Hr:Mn |  oF   % | Sp Gs Dir | Cvr | 1h 10h 100h | ft/min     ft     ft  No  |\n'
-  str += '|------------------|---------|-----------|-----|-------------|---------------------------|\n'
+  str += 'Elev Slope Asp Fuel Cured Live Wind\n'
+  str += ' ft    %   Asp Fuel  Herb Mois  Adj\n'
+  str += `${fix(parms.elev, 4, 0)}${fix(parms.slope, 5, 0)}${fix(parms.aspect, 5, 0)}`
+  str += `${fix(parms.fuel, 5)}${fix(parms.cured, 5, 2)}${fix(parms.live, 5, 0)}${fix(parms.waf, 6, 2)}\n\n`
+  let lastDate = ''
   wxArray.forEach(w => {
-    str += `| ${w.date} ${w.time} | `
+    if (w.date !== lastDate) {
+      if (lastDate !== '') str += h0
+      str += `\n  ${w.date}\n` + h0 + h1 + h2 + h0
+    }
+    str += `| ${w.time} | `
     str += `${fix(w.dryBulb, 3, 0)} `
     str += `${fix(w.humidity, 3, 0)} | `
     str += `${fix(w.windSpeed, 2, 0)} `
@@ -79,12 +84,18 @@ function getForecastTable (parms, wxArray) {
     // str += `${fix(w.solarGHI, 5, 0)} | `
     str += `${fix(w.tl1h, 2, 0)} `
     str += `${fix(w.tl10h, 3, 0)} `
-    str += `${fix(w.tl100h, 3, 0)}  | `
-    str += `${fix(w.spreadRate, 6, 2)} `
-    str += `${fix(w.flameLength, 6, 2)} `
-    str += `${fix(w.scorchHeight, 6, 2)} `
-    str += `${fix(w.headingFromNorth, 3, 0)} |\n`
+    str += `${fix(w.tl100h, 3, 0)}  |`
+    str += `${fix(w.spreadRate, 7, 2)}`
+    str += `${fix(w.flameLength, 7, 2)}`
+    str += `${fix(w.scorchHeight, 7, 2)}`
+    str += `${fix(w.headingFromNorth, 4, 0)}  |`
+    str += `${fix(w.gust.spreadRate, 7, 2)}`
+    str += `${fix(w.gust.flameLength, 7, 2)}`
+    str += `${fix(w.gust.scorchHeight, 7, 2)}`
+    str += `${fix(w.gust.headingFromNorth, 4, 0)}  |\n`
+    lastDate = w.date
   })
+  str += h0
   return str
 }
 
@@ -98,9 +109,8 @@ async function fireForecast (parms) {
   parms.aspect = esa.aspect
 
   // Next get weather data from tomorrow.io or weatherapi.com
-  // getTomorrow(parms.lat, parms.lon, parms.start, parms.end, parms.timezone)
-  //   .then(result => { showForecast(result, parms) })
-  const wxArray = await getWeatherapi(parms.lat, parms.lon, 1, 'fire')
+  const wxArray = await getTomorrow(parms.lat, parms.lon, parms.start, parms.end, parms.timezone)
+  // const wxArray = await getWeatherapi(parms.lat, parms.lon, 1, 'fire')
   addFireBehavior(parms, wxArray)
   const table = getForecastTable(parms, wxArray)
   console.log(table)
@@ -110,7 +120,7 @@ async function fireForecast (parms) {
 // Main CLI
 // ----------------------------------------------------------------
 const M = { name: 'The "M"', lat: 46.859340, lon: -113.975528 }
-const Home = { name: 'Home', lat: 46.85714, lon: -114.00730 }
+// const Home = { name: 'Home', lat: 46.85714, lon: -114.00730 }
 const loc = M
 // Define the command line parameters and their defaults
 // configure the time frame up to 6 hours back and 15 days out
@@ -121,7 +131,7 @@ const parms = {
   lat: loc.lat,
   lon: loc.lon,
   start: moment.utc(now).startOf('hour').toISOString(), // "2019-03-20T14:09:50Z"
-  end: moment.utc(now).add(24, 'hours').toISOString(),
+  end: moment.utc(now).add(48, 'hours').toISOString(),
   // Timezone of time values, according to IANA Timezone Names (defaults to 'UTC')
   // https://docs.tomorrow.io/reference/api-formats#timezone
   timezone: 'America/Denver',

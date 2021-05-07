@@ -144,7 +144,22 @@ export class FireBehavior {
         spreadRate: this.dag.node('surface.fire.ellipse.head.spreadRate').value()
       }
     }
-    console.log(output.moisture)
+
+    // ADd fire behavior during wind gusts
+    this.dag.input([
+      ['site.wind.speed.at10m', [inp.windGust]] // feet per minute (1 mph = 88 ft/min)
+    ]).run()
+    output.heading.gust = {
+      firelineIntensity: this.dag.node('surface.fire.ellipse.head.firelineIntensity').value(),
+      flameLength: this.dag.node('surface.fire.ellipse.head.flameLength').value(),
+      scorchHeight: this.dag.node('surface.fire.ellipse.head.scorchHeight').value(),
+      spreadDistance: this.dag.node('surface.fire.ellipse.head.spreadDistance').value(),
+      spreadRate: this.dag.node('surface.fire.ellipse.head.spreadRate').value()
+    }
+    output.fire.gust = {
+      headingFromUpslope: this.dag.node('surface.primary.fuel.fire.heading.fromUpslope').value(), // degrees
+      headingFromNorth: this.dag.node('surface.primary.fuel.fire.heading.fromNorth').value() // degrees
+    }
     return output
   }
 }
