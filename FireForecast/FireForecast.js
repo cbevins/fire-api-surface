@@ -1,7 +1,7 @@
 /**
- * fireForecast.js
+ * fireForecast.js is an example of using the FireBehaviorForecaster in Node.js
  *
- * Usage: node fireForecast.js
+ * Usage: node fireForecast.js lat=46.85934 lon=-113.975528 fuel=gs1 cured=50 liv=50
  *
  * Produces an hourly weather and fire forecast table
  * using world-wide weather forecast data from two alternate sources:
@@ -21,16 +21,17 @@ function getForecastTable (forecast) {
   const h1 = '|  Time |  Db  Rh | Wind mph  | Cld |  Dead Fuel  | Spread  Flame Scorch Head | Spread  Flame Scorch Head |\n'
   const h2 = '|       |  oF   % | Sp Gs Dir | Cvr | 1h 10h 100h | ft/min     ft     ft  No  |      During Wind Gusts    |\n'
 
-  let str = `\nFire Forecast for '${parms.name}' at lat ${parms.lat}, lon ${parms.lon}:\n`
-  str += 'Elev Slope Asp Fuel Cured Live Wind\n'
-  str += ' ft    %   Asp Fuel  Herb Mois  Adj\n'
-  str += `${fix(parms.elev, 4, 0)}${fix(parms.slope, 5, 0)}${fix(parms.aspect, 5, 0)}`
-  str += `${fix(parms.fuel, 5)}${fix(parms.cured, 5, 2)}${fix(parms.live, 5, 0)}${fix(parms.waf, 6, 2)}\n\n`
+  let str = `\nFire Forecast for '${parms.name}':\n`
+  str += '| Latitude | Longitude | Elev | Slope | Asp | Fuel | Cured | Live | Wind |\n'
+  str += '|          |           |  ft  |   %   |     | Modl |  Herb | Mois | Adj  |\n'
+  str += `|${fix(parms.lat, 9, 5)} |${fix(parms.lon, 9, 5)} |`
+  str += `${fix(parms.elev, 5, 0)} | ${fix(parms.slope, 4, 0)}  |${fix(parms.aspect, 4, 0)} | `
+  str += `${fix(parms.fuel, 4)} | ${fix(parms.cured, 4, 0)}  | ${fix(parms.live, 4, 0)} |${fix(parms.waf, 5, 2)} |\n\n`
   let lastDate = ''
   forecast.wx.forEach(w => {
     if (w.date !== lastDate) {
       if (lastDate !== '') str += h0
-      str += `\n  ${w.date}\n` + h0 + h1 + h2 + h0
+      str += `\n  Date: ${w.date}\n` + h0 + h1 + h2 + h0
     }
     str += `| ${w.time} | `
     str += `${fix(w.dryBulb, 3, 0)} `
@@ -80,10 +81,11 @@ const parms = {
 for (let a = 2; a < process.argv.length; a++) {
   const part = process.argv[a].split('=')
   if (part.length === 2) {
-    if (!Object.prototype.hasOwnProperty.call(parms, part[0])) {
-      throw new Error(`Invalid argument ${part[0]}`)
+    const [key, value] = part
+    if (!Object.prototype.hasOwnProperty.call(parms, key)) {
+      throw new Error(`Invalid argument '${key}'`)
     }
-    parms.set(part[0], part[1])
+    parms[key] = (['name', 'fuel', 'timezone'].includes(key)) ? value : parseFloat(value)
   }
 }
 
