@@ -1,47 +1,34 @@
-import { babel, getBabelOutputPlugin } from '@rollup/plugin-babel'
-import resolve from '@rollup/plugin-node-resolve'
-import { terser } from 'rollup-plugin-terser'
-
-const dist = 'dist'
-const packageName = 'bundle'
-const bundle = `${dist}/${packageName}`
-
-// const production = !process.env.ROLLUP_WATCH
+// import { terser } from 'rollup-plugin-terser'
 
 export default [
+  // {
+  //   input: 'index.js',
+  //   plugins: [terser()],
+  //   output: {
+  //     file: 'umd/fancy-case.js',
+  //     format: 'umd',
+  //     name: 'fancyCase',
+  //     esModule: false
+  //   }
+  // },
   {
-    input: 'src/index.js',
+    input: {
+      index: 'index.js',
+      astro: 'Astro/index.js',
+      calendar: 'Calendar/index.js',
+      fireforecast: 'FireForecast/index.js',
+      globe: 'Globe/index.js',
+      simple: 'SimpleSurfaceFire/index.js'
+    },
     output: [
       {
-        file: `${bundle}.esm.js`,
+        dir: 'dist/esm',
         format: 'esm'
       },
       {
-        file: `${bundle}.esm.min.js`,
-        format: 'esm',
-        plugins: [terser()]
-      },
-      {
-        file: `${bundle}.es5.js`,
-        format: 'esm',
-        plugins: [getBabelOutputPlugin({ presets: ['@babel/preset-env'] })]
-      },
-      {
-        file: `${bundle}.cjs.js`,
+        dir: 'dist/cjs',
         format: 'cjs'
-      },
-      {
-        file: `${bundle}.cjs.min.js`,
-        format: 'cjs',
-        plugins: [terser()]
       }
-    ],
-    plugins: [
-      resolve(),
-      babel({
-        babelHelpers: 'bundled',
-        exclude: 'node_modules/**'
-      })
     ]
   }
 ]

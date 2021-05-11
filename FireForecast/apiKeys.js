@@ -22,3 +22,5 @@ export const weatherapiForecast = {
   key: 'key=43956b1f6760417db1d182743212704',
   parms: '&days=3&q=46.85714,-114.0073&aqi=no&alerts=no'
 }
+
+export const mapQuestKey = 'd7ghMP8OtMz17DubWO3qsTPZTzXKfbY1'

@@ -1,5 +1,5 @@
 // Import and create a SimpleSurfaceFire instance
-import { SimpleSurfaceFire, SimpleSurfaceFireInput } from '../src/index.js'
+import { SimpleSurfaceFire, SimpleSurfaceFireInput } from '../index.js'
 const surface = new SimpleSurfaceFire()
 
 // Get a copy of the SimpleSurfaceFireInput object and make any desired changes

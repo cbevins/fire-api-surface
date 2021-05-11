@@ -15,9 +15,9 @@
     "url": "https://github.com/cbevins/fire-api-surface/issues"
   },
   "homepage": "https://github.com/cbevins/fire-api-surface/readme",
-  "main": "./dist/bundle.cjs.js",
-  "exports": "./dist/bundle.esm.js",
-  "module": "./dist/bundle.esm.js",
+  "main": "./dist/cjs/index.cjs",
+  "exports": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -84,16 +84,16 @@
     "eslint-plugin-promise": "4.3.1",
     "eslint-plugin-standard": "5.0.0",
     "jest": "26.6.3",
-    "moment": "2.29.1",
-    "node-fetch": "2.6.1",
-    "query-string": "7.0.0",
     "rimraf": "~3",
     "rollup": "2.44.0",
     "rollup-plugin-terser": "~7",
     "rollup-plugin-uglify": "~6"
   },
   "dependencies": {
-    "@cbevins/fire-behavior-simulator": "0.7.1",
-    "axios": "0.21.1"
+    "@cbevins/fire-behavior-simulator": "file:../fire-behavior-simulator",
+    "axios": "0.21.1",
+    "moment": "2.29.1",
+    "node-fetch": "2.6.1",
+    "query-string": "7.0.0"
   }
 }
