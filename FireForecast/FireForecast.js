@@ -70,6 +70,7 @@ const parms = {
   lat: loc.lat,
   lon: loc.lon,
   timezone: 'America/Denver',
+  hours: 4,
   fuel: 'gs1', // fuel model key
   waf: 0.4, // wind speed adjustment factor from 20-ft to midflame height
   cured: 0, // herb cured fraction (%)
