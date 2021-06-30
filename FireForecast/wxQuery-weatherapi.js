@@ -23,9 +23,13 @@ export const getForecast = async (lat, lon, days, format = 'fire') => {
   const alerts = 'no' // get weather alerts?
 
   const query = `${api.url}?${api.key}&days=${days}&q=${q}&aqi=${aqi}&alerts=${alerts}`
+  console.log('Making query: ', query)
   const request = await fetch(query, { method: 'GET' })
     .catch((error) => console.error('weatherapi forecast error: ' + error))
+  console.log('STATUS:', request.status)
+  console.log('RESPONSE', request)
   const json = await request.json()
+  console.log('JSON', json)
   const records = (format === 'fire') ? asFireWeather(json) : asTable(json)
   return records
 }
