@@ -6,7 +6,7 @@
  * - time since ignition (optional)
  * - an ignition point at [0,0]
  */
-import { abs, angle, azimuthOf, caz2rot, cos, deg2rad, distance, pi, rotatePoint, sin, sqrt, trunc } from './trig.js'
+import { abs, azimuthOf, caz2rot, cos, deg2rad, pi, rotatePoint, sin, sqrt, trunc } from './trig.js'
 
 export class FireEllipse {
   /**
@@ -16,14 +16,14 @@ export class FireEllipse {
    * @param {number} headingDegrees Fire heading (ellipse rotation) in degrees clockwise from north
    * @param {number} timeSinceIgnition Time since ignition
    */
-  constructor (length, width, headingDegrees = 0, timeSinceIgnition = 1) {
-    if (length <= 0 || width <= 0) {
+  constructor (leng, wid, headingDegrees = 0, timeSinceIgnition = 1) {
+    if (leng <= 0 || wid <= 0) {
       throw new Error('FireEllipse must have non-negative length and width')
     }
-    length = (length > width) ? length : width
-    width = (length > width) ? width : length
-    this._a = length / 2 // major axis radius
-    this._b = width / 2 // minor axis radius
+    leng = (leng > wid) ? leng : wid
+    wid = (leng > wid) ? wid : leng
+    this._a = leng / 2 // major axis radius
+    this._b = wid / 2 // minor axis radius
     this._c = sqrt(this._a * this._a - this._b * this._b)
     this._e = this._c / this._a // eccentricity
     this._g = this._a - this._c // backing distance
@@ -37,13 +37,17 @@ export class FireEllipse {
     // Determine ellipse center and fire head after rotation
     this._center = rotatePoint((this._a - this._g), 0, 0, 0, this._rot)
     this._head = rotatePoint(this._h, 0, 0, 0, this._rot)
+    this._back = rotatePoint(-this._g, 0, 0, 0, this._rot)
     // this._scanLines = this.scanLines()
   }
 
   a () { return this._a } // major axis radius
   b () { return this._b } // minor axis radius
+  back () { return this._back } // fire back [x,y] coordinate pair array
   backDist () { return this._g } // backing distance from ignition point
   backRate () { return this._g / this._time } // backing distance from ignition point
+  bx () { return this._back[0] }
+  by () { return this._back[1] }
   c () { return this._c } // ellipse c (distance from center to focus)
   center () { return this._center } // center point [x,y] coordinate pair array
   cx () { return this._center[0] } // center point x-coordinate
@@ -64,6 +68,7 @@ export class FireEllipse {
   iy () { return 0 } // ignition point y-coordinate
   length () { return 2 * this._a }
   lwr () { return this._a / this._b }
+  rotation () { return this._rot }
   xOffset () { return this._g } // distance from ignition point x to ellipse center point x
   width () { return 2 * this._b } // ellipse width
 
@@ -83,13 +88,24 @@ export class FireEllipse {
   // Returns radians clockwise from fire head to point [x,y]
   betaRadiansToPoint (x, y) { return this.betaDegreesToPoint(x, y) * pi() / 180 }
 
-  // Returns ratio of distance to ellipse perimeter at betaRad to distance at head
+  // Returns ratio of distance to ellipse perimeter at betaRad to the distance to the head
   betaRatio (betaRad) { return abs(betaRad) === 0 ? 1 : (1 - this._e) / (1 - this._e * cos(betaRad)) }
 
-  // Returns ratio of distances from ignition pt [x,y] / [hx, hy]
+  // Returns ratio of distances to ellipse perimeter from ignition pt [x,y] / [hx, hy]
   betaRatioToPoint (x, y) { return this.betaRatio(this.betaRadiansToPoint(x, y)) }
 
   betaRate (betaRad) { return this.betaDistToPerim(betaRad) / this._time }
+
+  betaTimeToPerim (betaRad) { return this.betaDistToPerim(betaRad) / this._time }
+
+  betaTimeToPoint (x, y) {
+    const betaRadians = this.betaRadiansToPoint(x, y)
+    const betaRatio = this.betaRatio(betaRadians)
+    const betaRate = betaRatio * this.headDist() / this._time
+    const betaDist = sqrt(x * x + y * y)
+    const betaTime = betaDist / betaRate
+    return betaTime
+  }
 
   /**
    * Returns TRUE if point x,y is *within* this Ellipse's boundary by the buffer amount.
@@ -149,27 +165,6 @@ export class FireEllipse {
       }
     }
     this._scanLines = map
-  }
-
-  /**
-   * Calculates fire arrival time at each point in a Cartesian grid from a
-   * FireEllipse ignition point.
-   *
-   * @param {number} spacing X and y distance between grid points
-   */
-  ignGrid (spacing, width = 10) {
-    const twoPi = 2 * pi()
-    const headRad = this.headRadians()
-    const grid = []
-    for (let x = 0, i = 0; x <= width; x++) {
-      const dx = x * spacing
-      for (let y = 0; y <= width; y++, i++) {
-        const dy = y * spacing
-        const vectDist = distance(0, 0, dx, dy)
-        const vectRad = angle(0, 0, dx, dy) // vector cartesians radians
-        const betaRad = (vectRad < headRad) ? twoPi - (headRad - vectRad) : vectRad - headRad
-      }
-    }
   }
 }
 
