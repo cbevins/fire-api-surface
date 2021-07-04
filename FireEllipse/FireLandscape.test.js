@@ -2,7 +2,7 @@
 import { FireLandscape, Burned, Unburned, Edge } from './FireLandscape.js'
 import { FireWavelet } from './FireWavelet.js'
 
-function fmt (x, y) { return `[${x.toFixed(2)}, ${y.toFixed(2)}]` }
+// function fmt (x, y) { return `[${x.toFixed(2)}, ${y.toFixed(2)}]` }
 
 test('1: FireLandscape constructor', () => {
   const width = 4000
@@ -103,7 +103,7 @@ test('3: FireLandscape.fireBehaviorAt()', () => {
   const fl = new FireLandscape(width, height, timeRes, spacing)
 
   const fire = fl.fireBehaviorAt(0, 0)
-  console.log(fire)
+  // console.log(fire)
   expect(fire.key).toEqual('124|0.778|0.05|0.07|0.09|0.50|1.50|0.25|135|315|880')
   expect(fire.lwr).toEqual(3.423598931799779)
   expect(fire.backRos).toEqual(1.0358737174389132)
@@ -128,7 +128,7 @@ test('4: FireLandscape col() and row()', () => {
   expect(fl.col(999999)).toEqual(4000 / 5)
 })
 
-test('5: FireLandscape FireWavelet', () => {
+test('5: FireLandscape.ignite() test', () => {
   const width = 4000
   const height = 5000
   const spacing = 5
@@ -146,9 +146,43 @@ test('5: FireLandscape FireWavelet', () => {
   expect(fw.hOrigin()).toEqual(1)
   expect(fw.vOrigin()).toEqual(1)
 
-  // Set an ignition point
   const ix = 2000
   const iy = 2500
+  const icol = fl.col(ix)
+  expect(icol).toEqual(400)
+  const irow = fl.row(iy)
+  expect(irow).toEqual(500)
+  expect(fl.hline(irow).segments.length).toEqual(2)
+  fl._hlines[irow] = fl.updateScanlineWithFire(ix, ix + 1, fl.hline(irow))
+  expect(fl.hline(irow).segments.length).toEqual(4)
+
+  expect(fl.vline(icol).segments.length).toEqual(2)
+  fl._vlines[icol] = fl.updateScanlineWithFire(iy, iy + 1, fl.vline(icol))
+  expect(fl.vline(icol).segments.length).toEqual(4)
+})
+
+test('6: FireLandscape.applyFirelet() development', () => {
+  const width = 4000
+  const height = 5000
+  const spacing = 5
+  const timeRes = 1
+  const fl = new FireLandscape(width, height, timeRes, spacing)
+
+  const fwLength = 100
+  const fwWidth = 50
+  const fwDegrees = 135
+  const verbose = false
+  const fw = new FireWavelet(fwLength, fwWidth, fwDegrees, timeRes, spacing, verbose)
+  expect(fw.a()).toEqual(50)
+  expect(fw.b()).toEqual(25)
+  expect(fw.headRate()).toBeCloseTo(93.3012701892219, 12)
+  expect(fw.hOrigin()).toEqual(1)
+  expect(fw.vOrigin()).toEqual(1)
+
+  // Apply the FireWavelet here:
+  const ix = 2000
+  const iy = 2500
+
   // let str = 'yFw yFl yIdx\n'
   fw.hlines().forEach(([ypos, x1, x2]) => {
     const idx = fl.row(iy + ypos)
@@ -156,20 +190,55 @@ test('5: FireLandscape FireWavelet', () => {
     let scanline = fl.hline(idx)
     expect(scanline.segments.length).toEqual(2)
     scanline = fl.updateScanlineWithFire(x1 + ix, x2 + ix, scanline)
-    console.log(scanline.segments)
+    // console.log(ypos, scanline.segments)
     expect(scanline.segments.length).toEqual(4) // Unburned, Burned, Unburned, Edge
     // str += `${Math.trunc(ypos)} ${Math.trunc(ypos + iy)} ${idx}\n`
   })
   // console.log(str)
 
   // let str = 'xFw xFl xIdx\n'
-  // fw.vlines().forEach(([xpos, y1, y2]) => {
-  //   const idx = fl.col(ix + xpos)
-  //   expect(idx).toEqual(Math.ceil(xpos + ix) / spacing)
-  //   let scanline = fl.vline(idx)
-  //   expect(scanline.segments.length).toEqual(2)
-  //   scanline = fl.updateScanlineWithFire(y1+iy, y2+iy, scanline)
-  //   str += `${Math.trunc(xpos)} ${Math.trunc(xpos + ix)} ${idx}\n`
-  // })
+  fw.vlines().forEach(([xpos, y1, y2]) => {
+    const idx = fl.col(ix + xpos)
+    expect(idx).toEqual(Math.ceil(xpos + ix) / spacing)
+    let scanline = fl.vline(idx)
+    expect(scanline.segments.length).toEqual(2)
+    scanline = fl.updateScanlineWithFire(y1 + iy, y2 + iy, scanline)
+    // str += `${Math.trunc(xpos)} ${Math.trunc(xpos + ix)} ${idx}\n`
+  })
   // console.log(str)
+})
+
+test('7: FireLandscape.applyFirelet()', () => {
+  const width = 4000
+  const height = 5000
+  const spacing = 5
+  const timeRes = 1
+  const fl = new FireLandscape(width, height, timeRes, spacing)
+
+  const fwLength = 100
+  const fwWidth = 50
+  const fwDegrees = 135
+  const verbose = false
+  const fw = new FireWavelet(fwLength, fwWidth, fwDegrees, timeRes, spacing, verbose)
+  expect(fw.a()).toEqual(50)
+  expect(fw.b()).toEqual(25)
+  expect(fw.headRate()).toBeCloseTo(93.3012701892219, 12)
+  expect(fw.hOrigin()).toEqual(1)
+  expect(fw.vOrigin()).toEqual(1)
+
+  // Apply the FireWavelet here:
+  const ix = 2000
+  const iy = 2500
+  fl.applyFireWaveletAt(fw, ix, iy)
+  fw.hlines().forEach(([ypos, x1, x2]) => {
+    const idx = fl.row(iy + ypos)
+    expect(idx).toEqual(Math.ceil(ypos + iy) / spacing)
+    expect(fl.hline(idx).segments.length).toEqual(4) // Unburned, Burned, Unburned, Edge
+  })
+
+  fw.vlines().forEach(([xpos, y1, y2]) => {
+    const idx = fl.col(ix + xpos)
+    expect(idx).toEqual(Math.ceil(xpos + ix) / spacing)
+    expect(fl.vline(idx).segments.length).toEqual(4) // Unburned, Burned, Unburned, Edge
+  })
 })

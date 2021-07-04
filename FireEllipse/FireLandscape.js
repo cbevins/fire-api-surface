@@ -38,6 +38,24 @@ export class FireLandscape extends AbstractLandscape {
     }
   }
 
+  applyFireWaveletAt (fw, ix, iy) {
+    fw.hlines().forEach(([ypos, x1, x2]) => {
+      const idx = this.row(iy + ypos)
+      this._hlines[idx] = this.updateScanlineWithFire(x1 + ix, x2 + ix, this._hlines[idx])
+    })
+    fw.vlines().forEach(([xpos, y1, y2]) => {
+      const idx = this.col(ix + xpos)
+      this._vlines[idx] = this.updateScanlineWithFire(y1 + iy, y2 + iy, this._vlines[idx])
+    })
+  }
+
+  // Returns index of the vlines at x
+  col (x) {
+    x = Math.max(0, x)
+    x = Math.min(x, this._sceneWidth)
+    return Math.floor(x / this._scanSpacing)
+  }
+
   // Returns {key, lwr, backRos, flankRos, headRos, heading, length, width}
   fireBehaviorAt (point, time) {
     const input = {
@@ -60,11 +78,17 @@ export class FireLandscape extends AbstractLandscape {
     return fire
   }
 
-  // Returns index of the vlines at x
-  col (x) {
-    x = Math.max(0, x)
-    x = Math.min(x, this._sceneWidth)
-    return Math.floor(x / this._scanSpacing)
+  // Returns a reference to the horizontal scan line at idx
+  hline (idx) { return this._hlines[idx] }
+
+  // Returns a reference to the array of horizontal scan lines
+  hlines () { return this._hlines }
+
+  ignite (x, y, length = 1) {
+    const col = this.col(x)
+    const row = this.row(y)
+    this._hlines[row] = this.updateScanlineWithFire(x, x + length, this._hlines[row])
+    this._vlines[col] = this.updateScanlineWithFire(y, y + length, this._vlines[col])
   }
 
   // Returns the index of the hline at y
@@ -74,13 +98,7 @@ export class FireLandscape extends AbstractLandscape {
     return Math.floor(y / this._scanSpacing)
   }
 
-  // Returns a reference to the horizontal scan line at idx
-  hline (idx) { return this._hlines[idx] }
-
-  // Returns a reference to the array of horizontal scan lines
-  hlines () { return this._hlines }
-
-  // Returns an array of all the scaline's burned-unbured and unburned-burned interfaces
+  // Returns an array of all the scanline's burned-unbured and unburned-burned interfaces
   scanlineFireFronts (scanline) {
     const pts = []
     scanline.segments.forEach((segment, idx) => {
