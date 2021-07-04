@@ -62,7 +62,10 @@ export class FireWavelet extends FireEllipse {
 
   fmt (x, y) { return `[${x.toFixed(2)}, ${y.toFixed(2)}]` }
 
-  hScans () { return this._hScans }
+  hlines () { return this._hlines }
+
+  // Returns index of the FireWavelet origin in the hlines array
+  hOrigin () { return this._hOrigin }
 
   scan (p1x, p1y, p2x, p2y, verbose = false) {
     let str = ''
@@ -96,34 +99,39 @@ export class FireWavelet extends FireEllipse {
   }
 
   scanHorizontal () {
-    this._hScans = []
+    this._hlines = []
     const lines = Math.ceil(this.length() / this._spacing) + 1
     const x = this._spacing * lines
     // Traverse from north (positive y) to origin to south (negative y)
     for (let line = lines; line >= -lines; line--) {
       const y = line * this._spacing
+      if (y === 0) this._hOrigin = this._hlines.length
       const a = this.scan(-x, y, x, y)
       if (a.length) {
         if (a.length === 1) a.push(a[0]) // include tangents
-        this._hScans.push([a[0][1], a[0][0], a[1][0]]) // [y, x1, x2]
+        this._hlines.push([a[0][1], a[0][0], a[1][0]]) // [y, x1, x2]
       }
     }
   }
 
   scanVertical () {
-    this._vScans = []
+    this._vlines = []
     const lines = Math.ceil(this.length() / this._spacing) + 1
     const y = this._spacing * lines
     // Traverse from west (negative x) to origin to east (positive x)
     for (let line = -lines; line <= lines; line++) {
       const x = line * this._spacing
+      if (x === 0) this._vOrigin = this._vlines.length
       const a = this.scan(x, y, x, -y)
       if (a.length) {
         if (a.length === 1) a.push(a[0]) // include tangents
-        this._vScans.push([a[0][0], a[0][1], a[1][1]]) // [x, y1, y2]
+        this._vlines.push([a[0][0], a[0][1], a[1][1]]) // [x, y1, y2]
       }
     }
   }
 
-  vScans () { return this._vScans }
+  vlines () { return this._vlines }
+
+  // Returns index of the FireWavelet origin in the vlines array
+  vOrigin () { return this._vOrigin }
 }
