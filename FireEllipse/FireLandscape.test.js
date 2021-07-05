@@ -242,3 +242,33 @@ test('7: FireLandscape.applyFirelet()', () => {
     expect(fl.vline(idx).segments.length).toEqual(4) // Unburned, Burned, Unburned, Edge
   })
 })
+
+test('8: FireLandscape.grow()', () => {
+  const width = 4000
+  const height = 5000
+  const spacing = 5
+  const timeRes = 1
+  const fl = new FireLandscape(width, height, timeRes, spacing)
+
+  const fwLength = 100
+  const fwWidth = 50
+  const fwDegrees = 135
+  const verbose = false
+  const fw = new FireWavelet(fwLength, fwWidth, fwDegrees, timeRes, spacing, verbose)
+  expect(fw.a()).toEqual(50)
+
+  // Apply the FireWavelet here:
+  const ix = 2000
+  const iy = 2500
+  fl.applyFireWaveletAt(fw, ix, iy)
+
+  const pts = fl.ignitionPoints()
+  // console.log(pts)
+  const h = fw.hlines().length
+  const v = fw.vlines().length
+  expect(pts.length).toEqual(2 * h + 2 * v)
+
+  // fl.grow(fw)
+  // pts = fl.ignitionPoints()
+  // expect(pts.length).toEqual(3491)
+})

@@ -78,6 +78,40 @@ export class FireLandscape extends AbstractLandscape {
     return fire
   }
 
+  grow (fireWavelet) {
+    const pts = this.ignitionPoints()
+    // Should request a FireWavelet for each ignition point...but for now...
+    pts.forEach(([x, y]) => { this.applyFireWaveletAt(fireWavelet, x, y) })
+  }
+
+  ignitionPoints () {
+    const pts = []
+    this._hlines.forEach((hline, row) => {
+      hline.segments.forEach((segment, idx) => {
+        if (segment.status !== Edge) {
+          const next = hline.segments[idx + 1]
+          if ((segment.status === Burned && next.status === Unburned) ||
+              (segment.status === Unburned && next.status === Burned)) {
+            pts.push([segment.starts, hline.at])
+          }
+        }
+      })
+    })
+    this._vlines.forEach((vline, col) => {
+      vline.segments.forEach((segment, idx) => {
+        if (segment.status !== Edge) {
+          const next = vline.segments[idx + 1]
+          if ((segment.status === Burned && next.status === Unburned) ||
+              (segment.status === Unburned && next.status === Burned)) {
+            // this.applyFireWaveletAt(segment.starts, hline.yos)
+            pts.push([vline.at, segment.starts])
+          }
+        }
+      })
+    })
+    return pts
+  }
+
   // Returns a reference to the horizontal scan line at idx
   hline (idx) { return this._hlines[idx] }
 
@@ -135,7 +169,7 @@ export class FireLandscape extends AbstractLandscape {
         const segEnds = scanline.segments[idx + 1].starts
         // Case 2: The fire segment and this scanline segments do not overlap
         // adds this scanline segment as-is to the updated segment
-        if (fireEnds < segment.starts || fireBegins > segEnds) {
+        if (fireEnds < segment.starts || fireBegins >= segEnds) {
           this.updateSegment(updated, segment)
         }
         // Case 3: The fire segment completely covers this scanline segment
@@ -162,7 +196,9 @@ export class FireLandscape extends AbstractLandscape {
           this.updateSegment(updated, { starts: fireBegins, status: Burned })
           this.updateSegment(updated, { starts: fireEnds, status: Unburned })
         } else {
-          throw new Error(`FireLandscape.insertBurning(${fireBegins}, ${fireEnds}) unhandled case`)
+          let msg = `FireLandscape.insertBurning(${fireBegins}, ${fireEnds}) unhandled case`
+          msg += ` for segment ${segment.starts} - ${segEnds}`
+          throw new Error(msg)
         }
       }
     })
