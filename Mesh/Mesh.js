@@ -77,12 +77,12 @@ export class MeshLine {
   // Returns the value of segment at 'idx'
   value (idx) { return this._segments[idx].value() }
 
-  // Returns the value at 'pos'
-  valueAtPos (pos) {
+  // Returns the value at 'distance' in world coordinate units
+  valueAtDistance (distance) {
     let value = this.value(0)
     const lastIdx = this.lastIdx()
     let idx = 1
-    while (idx <= lastIdx && this.starts(idx) <= pos) { value = this.value(idx++) }
+    while (idx <= lastIdx && this.starts(idx) <= distance) { value = this.value(idx++) }
     return value
   }
 }
@@ -132,8 +132,22 @@ export class MeshArray {
   // Returns the world coordinate of the last MeshLine
   posStop () { return this._stop }
 
+  // Sets or replaces the MeshLine at 'idx', perhaps from an overlay operation
+  setMeshLine (idx, meshLine) {
+    this._lines[idx] = meshLine
+    return this
+  }
+
+  // Sets or replaces the MeshLine closest to 'pos', perhaps from an overlay operation
+  setMeshLineAtPos (pos, meshLine) { return this.setMeshLine(this.idxAtPos(pos), meshLine) }
+
   // Returns the absolute (positive) spacing distance between adjacent MeshLines
   spacing () { return Math.abs(this._step) }
+
+  // Returns value at MeshLine for 'pos' world coordinate at 'distance'
+  valueAtPos (pos, distance) {
+    return this.lineAtPos(pos).valueAtDistance(distance)
+  }
 }
 
 // Defines a regularly spaced Mesh of horizontal and vertical MeshArrays
@@ -171,7 +185,11 @@ export class MeshFeature {
 
   top () { return this._top }
 
-  valueAtY (y) { return this._harray.idxAtPos(y) }
+  // Returns vertical MeshLine value for 'x' world coordinate at 'distance'
+  valueAtX (x, distance) { return this._varray.lineAtPos(x).valueAtDistance(distance) }
+
+  // Returns horizontal MeshLine value for 'y' world coordinate at 'distance'
+  valueAtY (y, distance) { return this._harray.lineAtPos(y).valueAtDistance(distance) }
 
   varray () { return this._varray }
 }
