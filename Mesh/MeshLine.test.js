@@ -1,4 +1,4 @@
-import { MeshLine } from './Mesh.js'
+import { MeshLine } from './MeshLine.js'
 
 test('1: MeshLine constructor, pos(), segments()', () => {
   const line = new MeshLine(123)
@@ -7,98 +7,147 @@ test('1: MeshLine constructor, pos(), segments()', () => {
 })
 
 test('2: MeshLine.fill(), segments(), segment()', () => {
-  const line = new MeshLine(123).fill(456, 789)
+  const line = new MeshLine(123).fill(100, 200, 'fillValue')
   expect(line.pos()).toEqual(123)
   expect(line.segments()).toHaveLength(1)
-  expect(line.segment(0).starts()).toEqual(456)
-  expect(line.segment(0).value()).toEqual(789)
+  expect(line.segment(0).begins()).toEqual(100)
+  expect(line.segment(0).ends()).toEqual(200)
+  expect(line.segment(0).value()).toEqual('fillValue')
 })
 
-test('3: MeshLine.appendSegment()', () => {
+test('3: MeshLine.extendLine()', () => {
   const line = new MeshLine(123)
   expect(line.segments()).toHaveLength(0)
-  expect(line.appendSegment(123, 1).segments()).toHaveLength(1)
-  expect(line.appendSegment(456, 2).segments()).toHaveLength(2)
+  expect(line.extendLine(100, 200, 1).segments()).toHaveLength(1)
+  expect(line.extendLine(200, 300, 2).segments()).toHaveLength(2)
+  expect(line.segment(0)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+  expect(line.segment(1)).toEqual({ _begins: 200, _ends: 300, _value: 2 })
+
   // Do not append segment if it is a continuation of the previous segment
-  expect(line.appendSegment(789, 2).segments()).toHaveLength(2)
-  expect(line.appendSegment(111, 3).segments()).toHaveLength(3)
+  expect(line.extendLine(300, 400, 2).segments()).toHaveLength(2)
+  expect(line.segment(0)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+  expect(line.segment(1)).toEqual({ _begins: 200, _ends: 400, _value: 2 })
+
+  expect(line.extendLine(400, 500, 3).segments()).toHaveLength(3)
+  expect(line.segment(0)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+  expect(line.segment(1)).toEqual({ _begins: 200, _ends: 400, _value: 2 })
+  expect(line.segment(2)).toEqual({ _begins: 400, _ends: 500, _value: 3 })
+
   // fill() resets the MeshLine
-  expect(line.fill(999, 4).segments()).toHaveLength(1)
-  expect(line.segment(0).starts()).toEqual(999)
-  expect(line.segment(0).value()).toEqual(4)
+  expect(line.fill(1000, 5000, 9).segments()).toHaveLength(1)
+  expect(line.segment(0).begins()).toEqual(1000)
+  expect(line.segment(0).ends()).toEqual(5000)
+  expect(line.segment(0).value()).toEqual(9)
 })
 
-test('4: MeshLine.overlay() before first segment with gap', () => {
-  const src = new MeshLine(123)
-  src.appendSegment(500, 1)
-  // Should have a single segment {500, 1}
-  expect(src.segments()).toHaveLength(1)
-  expect(src.segment(0)).toEqual({ _starts: 500, _value: 1 })
+test('4: MeshLine.overlay()', () => {
+  const line = new MeshLine(123)
+  expect(line.segments()).toHaveLength(0)
 
-  // Overlay a segment BEFORE this one
-  // Should end up {100, 2}, {200, 1}
-  const dst = src.overlay(100, 200, 2)
-  expect(dst.segments()).toHaveLength(2)
-  expect(dst.segment(0)).toEqual({ _starts: 100, _value: 2 })
-  expect(dst.segment(1)).toEqual({ _starts: 200, _value: 1 })
+  // Overlay onto an empty MeshLine
+  const dst = line.overlay(100, 200, 1)
+  expect(dst.segments()).toHaveLength(1)
+  expect(dst.segment(0)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+
+  // Overlay onto self
+  line.overlaySelf(100, 200, 1)
+  expect(line.segments()).toHaveLength(1)
+  expect(line.segment(0)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+
+  // Add an overlay the begins and ends before the first segment
+  line.overlaySelf(0, 100, 0)
+  expect(line.segments()).toHaveLength(2)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+
+  // An overlay that begins after the last segment
+  line.overlaySelf(400, 500, 4)
+  expect(line.segments()).toHaveLength(3)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 400, _ends: 500, _value: 4 })
+
+  // Fill in the MeshLine a bit
+  line.overlaySelf(200, 300, 2).overlaySelf(300, 400, 3).overlaySelf(500, 600, 5)
+  expect(line.segments()).toHaveLength(6)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 200, _ends: 300, _value: 2 })
+  expect(line.segment(3)).toEqual({ _begins: 300, _ends: 400, _value: 3 })
+  expect(line.segment(4)).toEqual({ _begins: 400, _ends: 500, _value: 4 })
+  expect(line.segment(5)).toEqual({ _begins: 500, _ends: 600, _value: 5 })
+
+  // An overlay the begins and ends on adjacent segments
+  line.overlaySelf(250, 350, 2.5)
+  expect(line.segments()).toHaveLength(7)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 200, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 200, _ends: 250, _value: 2 })
+  expect(line.segment(3)).toEqual({ _begins: 250, _ends: 350, _value: 2.5 })
+  expect(line.segment(4)).toEqual({ _begins: 350, _ends: 400, _value: 3 })
+  expect(line.segment(5)).toEqual({ _begins: 400, _ends: 500, _value: 4 })
+  expect(line.segment(6)).toEqual({ _begins: 500, _ends: 600, _value: 5 })
+
+  // An overlay begins and ends within nonadjacent segments
+  line.overlaySelf(150, 450, 3.5)
+  expect(line.segments()).toHaveLength(5)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 150, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 150, _ends: 450, _value: 3.5 })
+  expect(line.segment(3)).toEqual({ _begins: 450, _ends: 500, _value: 4 })
+  expect(line.segment(4)).toEqual({ _begins: 500, _ends: 600, _value: 5 })
+
+  // Overlay that begins and end on a boundary
+  line.overlaySelf(450, 500, 4.5)
+  expect(line.segments()).toHaveLength(5)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 150, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 150, _ends: 450, _value: 3.5 })
+  expect(line.segment(3)).toEqual({ _begins: 450, _ends: 500, _value: 4.5 })
+  expect(line.segment(4)).toEqual({ _begins: 500, _ends: 600, _value: 5 })
+
+  // Overlay that begins on a boundary and ends within a segment
+  line.overlaySelf(450, 550, 5.5)
+  expect(line.segments()).toHaveLength(5)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 150, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 150, _ends: 450, _value: 3.5 })
+  expect(line.segment(3)).toEqual({ _begins: 450, _ends: 550, _value: 5.5 })
+  expect(line.segment(4)).toEqual({ _begins: 550, _ends: 600, _value: 5 })
+
+  // Overlay that begins within a segment and ends on a boundary
+  line.overlaySelf(500, 600, 6.5)
+  expect(line.segments()).toHaveLength(5)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 150, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 150, _ends: 450, _value: 3.5 })
+  expect(line.segment(3)).toEqual({ _begins: 450, _ends: 500, _value: 5.5 })
+  expect(line.segment(4)).toEqual({ _begins: 500, _ends: 600, _value: 6.5 })
+
+  // Overlay that begins and ends within the same segment
+  line.overlaySelf(525, 575, 7)
+  expect(line.segments()).toHaveLength(7)
+  expect(line.segment(0)).toEqual({ _begins: 0, _ends: 100, _value: 0 })
+  expect(line.segment(1)).toEqual({ _begins: 100, _ends: 150, _value: 1 })
+  expect(line.segment(2)).toEqual({ _begins: 150, _ends: 450, _value: 3.5 })
+  expect(line.segment(3)).toEqual({ _begins: 450, _ends: 500, _value: 5.5 })
+  expect(line.segment(4)).toEqual({ _begins: 500, _ends: 525, _value: 6.5 })
+  expect(line.segment(5)).toEqual({ _begins: 525, _ends: 575, _value: 7 })
+  expect(line.segment(6)).toEqual({ _begins: 575, _ends: 600, _value: 6.5 })
 })
 
-test('5: MeshLine.overlay() before first segment without gap', () => {
-  const src = new MeshLine(123)
-  src.appendSegment(500, 1)
-  // Should have a single segment {500, 1}
-  expect(src.segments()).toHaveLength(1)
+test('7: MeshLine.valueAtDistance()', () => {
+  const line = new MeshLine(123)
+  line.overlaySelf(0, 100, 0).overlaySelf(100, 200, 1).overlaySelf(200, 300, 2)
+    .overlaySelf(300, 400, 3).overlaySelf(400, 500, 4).overlaySelf(500, 600, 5)
+  expect(line.segments()).toHaveLength(6)
 
-  // Overlay a segment BEFORE this one
-  // Should end up {100, 2}, {700, 1}
-  const dst = src.overlay(100, 700, 2)
-  expect(dst.segments()).toHaveLength(2)
-  expect(dst.segment(0)).toEqual({ _starts: 100, _value: 2 })
-  expect(dst.segment(1)).toEqual({ _starts: 700, _value: 1 })
-})
+  expect(line.valueAtDistance(0)).toEqual(0)
+  expect(line.valueAtDistance(50)).toEqual(0)
+  expect(line.valueAtDistance(99.999)).toEqual(0)
 
-test('6: MeshLine.overlay() after last segment without gap', () => {
-  const src = new MeshLine(123)
-  src.appendSegment(500, 1)
-  // Should have a single segment {500, 1}
-  expect(src.segments()).toHaveLength(1)
-  expect(src.segment(0)).toEqual({ _starts: 500, _value: 1 })
-  expect(src.starts(0)).toEqual(500)
-  expect(src.ends(0)).toEqual(Infinity)
-  expect(src.value(0)).toEqual(1)
-
-  // Overlay a segment AFTER this one
-  const dst = src.overlay(700, 100, 2)
-  expect(dst.segments()).toHaveLength(2)
-  expect(dst.segment(0)).toEqual({ _starts: 500, _value: 1 })
-  expect(dst.segment(1)).toEqual({ _starts: 700, _value: 2 })
-})
-
-test('7: MeshLine.overlay() into several segments', () => {
-  const src = new MeshLine(123)
-  src.appendSegment(500, 1)
-  src.appendSegment(1000, 2)
-  src.appendSegment(1500, 3)
-  src.appendSegment(2000, 4)
-  expect(src.segments()).toHaveLength(4)
-
-  const dst = src.overlay(1250, 1750, 'overlay')
-  expect(dst.segments()).toHaveLength(5)
-  expect(dst.segment(0)).toEqual({ _starts: 500, _value: 1 })
-  expect(dst.segment(1)).toEqual({ _starts: 1000, _value: 2 })
-  expect(dst.segment(2)).toEqual({ _starts: 1250, _value: 'overlay' })
-  expect(dst.segment(3)).toEqual({ _starts: 1750, _value: 3 })
-  expect(dst.segment(4)).toEqual({ _starts: 2000, _value: 4 })
-
-  expect(dst.valueAtDistance(0)).toEqual(1)
-  expect(dst.valueAtDistance(500)).toEqual(1)
-  expect(dst.valueAtDistance(999)).toEqual(1)
-  expect(dst.valueAtDistance(1000)).toEqual(2)
-  expect(dst.valueAtDistance(1249)).toEqual(2)
-  expect(dst.valueAtDistance(1250)).toEqual('overlay')
-  expect(dst.valueAtDistance(1749)).toEqual('overlay')
-  expect(dst.valueAtDistance(1750)).toEqual(3)
-  expect(dst.valueAtDistance(1999)).toEqual(3)
-  expect(dst.valueAtDistance(2000)).toEqual(4)
-  expect(dst.valueAtDistance(9999)).toEqual(4)
+  expect(line.valueAtDistance(100)).toEqual(1)
+  expect(line.valueAtDistance(199)).toEqual(1)
+  expect(line.valueAtDistance(200)).toEqual(2)
+  expect(line.valueAtDistance(299)).toEqual(2)
 })
