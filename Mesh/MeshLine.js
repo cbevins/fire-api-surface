@@ -108,7 +108,7 @@ export class MeshLine {
   value (idx) { return this._segments[idx].value() }
 
   // Returns the value at 'distance' in world coordinate units
-  valueAtDistance (distance) {
+  valueAt (distance) {
     const lastIdx = this.lastIdx()
     for (let idx = 0; idx <= lastIdx; idx++) {
       if (this.begins(idx) <= distance && distance < this.ends(idx)) {
