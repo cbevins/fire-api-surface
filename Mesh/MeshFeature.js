@@ -9,12 +9,19 @@ export class MeshFeature {
     this._bottom = bottom // feature's bottom-most horizontal Meshline world coordinate
     this._hstep = (top <= bottom) ? spacing : -spacing // world coordinate spacing between each adjacent MeshLine
     this._defaultValue = defaultValue
+    // The default anchor position is the upper-left corner
+    this._ax = left
+    this._ay = top
     this._hlines = []
     const n = Math.ceil(Math.abs((bottom - top) / spacing))
     for (let idx = 0; idx <= n; idx++) {
       this._hlines.push(new MeshLine(this._top + idx * this._hstep))
     }
   }
+
+  // Returns this feature's anchor position
+  ax () { return this._ax }
+  ay () { return this._ay }
 
   // Returns the feature's bottom-most horizontal MeshLine y world coordinate
   bottom () { return this._bottom }
@@ -51,6 +58,13 @@ export class MeshFeature {
 
   // Returns a reference to the horizontal MeshLine closets to the 'y' world coordinate
   lineAt (y) { return this._hlines[this.idxAt(y)] }
+
+  // Sets the anchor position when overlaying this feature onto another feature's destination
+  setAnchor (x, y) {
+    this._ax = x
+    this._ay = y
+    return this
+  }
 
   spacing () { return this._spacing }
 

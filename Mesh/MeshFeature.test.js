@@ -8,6 +8,8 @@ test('1: MeshFeature constructor and accessors', () => {
   expect(f.bottom()).toEqual(4000)
   expect(f.spacing()).toEqual(10)
   expect(f.hlines()).toHaveLength(101)
+  expect(f.ax()).toEqual(1000)
+  expect(f.ay()).toEqual(5000)
 })
 
 test('2: MeshFeature.idxAt(), lineAt()', () => {
