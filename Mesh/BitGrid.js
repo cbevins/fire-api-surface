@@ -29,17 +29,6 @@ export class BitGrid {
     const value = this.bit[bigIndex] & (1 << smallIndex)
     // we convert to boolean to make sure the result is always 0 or 1,
     // instead of what is returned by the mask
-    return value != 0
+    return value !== 0
   }
 }
-
-// Since our bit vector is stored in a single number, we simply initialize it as 0.
-// const vec = buildVector(64)
-const grid = new BitGrid(1000, 1000)
-
-grid.set(200, 700)
-console.log('Is cell [200,700] set? ' + grid.get(200, 700))
-console.log('Is cell [500,500] set? ' + grid.get(500, 500))
-
-grid.clear(200, 700)
-console.log('Is cell [200,700] set? ' + grid.get(200, 700))
